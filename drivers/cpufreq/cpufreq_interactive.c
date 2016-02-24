@@ -1298,7 +1298,7 @@ static ssize_t store_use_migration_notif(
 			struct cpufreq_interactive_tunables *tunables,
 			const char *buf, size_t count)
 {
-	return 0;
+	return -ENODEV;
 }
 
 static ssize_t show_powersave_bias(struct cpufreq_interactive_tunables *tunables,
