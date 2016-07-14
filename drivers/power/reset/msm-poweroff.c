@@ -311,6 +311,11 @@ static void msm_restart_prepare(const char *cmd)
 		qpnp_pon_system_pwr_off(PON_POWER_OFF_HARD_RESET);
 	}
 
+	if (in_panic) {
+		qpnp_pon_set_restart_reason(PON_RESTART_REASON_REBOOT);
+		__raw_writel(0x77665501, restart_reason);
+	} else
+
 	if (cmd != NULL) {
 /* add by yangrujin@bsp 2016/4/6, set warm reboot magic and store reboot reason for wlan/rf/ftm/kernel/modem/android mode*/
         if (!strncmp(cmd, "rf", 2)) {
