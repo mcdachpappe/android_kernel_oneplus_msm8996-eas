@@ -77,3 +77,5 @@ obj-$(CONFIG_TUSB320_TYPE_C)	+= type-c-tusb320.o
 obj-$(CONFIG_FUSB301_TYPE_C)	+= type-c-fusb301.o
 obj-$(CONFIG_PTN5150_TYPE_C)	+= type-c-ptn5150.o
 obj-$(CONFIG_TYPE_C_NOTIFIER)	+= type-c_notifier.o
+obj-$(CONFIG_FORCE_FAST_CHARGE) += fastchg.o
+
