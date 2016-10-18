@@ -8334,9 +8334,6 @@ EXPORT_SYMBOL(ufshcd_system_suspend);
 
 int ufshcd_system_resume(struct ufs_hba *hba)
 {
-	int ret = 0;
-	ktime_t start = ktime_get();
-
 	if (!hba)
 		return -EINVAL;
 
@@ -8345,14 +8342,9 @@ int ufshcd_system_resume(struct ufs_hba *hba)
 		 * Let the runtime resume take care of resuming
 		 * if runtime suspended.
 		 */
-		goto out;
-	else
-		ret = ufshcd_resume(hba, UFS_SYSTEM_PM);
-out:
-	trace_ufshcd_system_resume(dev_name(hba->dev), ret,
-		ktime_to_us(ktime_sub(ktime_get(), start)),
-		hba->curr_dev_pwr_mode, hba->uic_link_state);
-	return ret;
+		return 0;
+
+	return ufshcd_resume(hba, UFS_SYSTEM_PM);
 }
 EXPORT_SYMBOL(ufshcd_system_resume);
 
@@ -8366,22 +8358,13 @@ EXPORT_SYMBOL(ufshcd_system_resume);
  */
 int ufshcd_runtime_suspend(struct ufs_hba *hba)
 {
-	int ret = 0;
-	ktime_t start = ktime_get();
-
 	if (!hba)
 		return -EINVAL;
 
 	if (!hba->is_powered)
-		goto out;
-	else
-		ret = ufshcd_suspend(hba, UFS_RUNTIME_PM);
-out:
-	trace_ufshcd_runtime_suspend(dev_name(hba->dev), ret,
-		ktime_to_us(ktime_sub(ktime_get(), start)),
-		hba->curr_dev_pwr_mode,
-		hba->uic_link_state);
-	return ret;
+		return 0;
+
+	return ufshcd_suspend(hba, UFS_RUNTIME_PM);
 
 }
 EXPORT_SYMBOL(ufshcd_runtime_suspend);
@@ -8409,22 +8392,13 @@ EXPORT_SYMBOL(ufshcd_runtime_suspend);
  */
 int ufshcd_runtime_resume(struct ufs_hba *hba)
 {
-	int ret = 0;
-	ktime_t start = ktime_get();
-
 	if (!hba)
 		return -EINVAL;
 
 	if (!hba->is_powered)
-		goto out;
-	else
-		ret = ufshcd_resume(hba, UFS_RUNTIME_PM);
-out:
-	trace_ufshcd_runtime_resume(dev_name(hba->dev), ret,
-		ktime_to_us(ktime_sub(ktime_get(), start)),
-		hba->curr_dev_pwr_mode,
-		hba->uic_link_state);
-	return ret;
+		return 0;
+
+	return ufshcd_resume(hba, UFS_RUNTIME_PM);
 }
 EXPORT_SYMBOL(ufshcd_runtime_resume);
 
