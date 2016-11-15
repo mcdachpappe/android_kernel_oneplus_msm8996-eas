@@ -5517,7 +5517,7 @@ static char *i_trim(char *str)
    /* Find the first non white-space*/
    for (ptr = str; i_isspace(*ptr); ptr++);
    if (*ptr == '\0')
-        return str;
+      return str;
 
    /* This is the new start of the string*/
    str = ptr;
@@ -7586,8 +7586,7 @@ v_BOOL_t hdd_update_config_dat( hdd_context_t *pHddCtx )
                      NULL, eANI_BOOLEAN_FALSE)==eHAL_STATUS_FAILURE)
      {
         fStatus = FALSE;
-        hddLog(LOGE,
-		"Could not pass on WNI_CFG_MCAST_BCAST_FILTER_SETTING to CCM");
+        hddLog(LOGE,"Failure: Could not pass on WNI_CFG_MCAST_BCAST_FILTER_SETTING configuration info to CCM");
      }
 #endif
 
