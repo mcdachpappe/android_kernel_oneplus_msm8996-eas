@@ -35,7 +35,7 @@ unsigned long boosted_cpu_util(int cpu);
 #define ACGOV_KTHREAD_PRIORITY	50
 
 #define FREQ_RESPONSIVENESS			1036800
-#define PUMP_INC_STEP_AT_MIN_FREQ	2
+#define PUMP_INC_STEP_AT_MIN_FREQ	1
 #define PUMP_INC_STEP				1
 #define PUMP_DEC_STEP_AT_MIN_FREQ	1
 #define PUMP_DEC_STEP				1
