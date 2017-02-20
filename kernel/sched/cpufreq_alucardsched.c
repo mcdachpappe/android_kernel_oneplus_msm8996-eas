@@ -38,8 +38,12 @@ unsigned long boosted_cpu_util(int cpu);
 #define PUMP_INC_STEP_AT_MIN_FREQ	1
 #define PUMP_INC_STEP				1
 #define PUMP_DEC_STEP_AT_MIN_FREQ	1
-#define PUMP_DEC_STEP				1
+#define PUMP_DEC_STEP
+#ifndef CONFIG_LGE_PM				1
 #define BOOST_PERC					10
+#else
+#define BOOST_PERC					5
+#endif
 
 struct acgov_tunables {
 	struct gov_attr_set attr_set;
@@ -96,6 +100,59 @@ struct acgov_cpu {
 
 static DEFINE_PER_CPU(struct acgov_cpu, acgov_cpu);
 static DEFINE_PER_CPU(struct acgov_tunables, cached_tunables);
+
+#ifdef CONFIG_LGE_PM
+#define LITTLE_NFREQS				16
+#define BIG_NFREQS					25
+static unsigned long little_capacity[LITTLE_NFREQS][2] = {
+	{0, 149},
+	{149, 188},
+	{188, 225},
+	{225, 257},
+	{257, 281},
+	{281, 315},
+	{315, 368},
+	{368, 406},
+	{406, 428},
+	{428, 469},
+	{469, 502},
+	{502, 538},
+	{538, 581},
+	{581, 611},
+	{611, 648},
+	{648, 684},
+	{684, 729},
+	{729, 763}
+};
+
+static unsigned long big_capacity[BIG_NFREQS][2] = {
+	{0, 149},
+	{149, 188},
+	{188, 225},
+	{225, 257},
+	{257, 281},
+	{281, 315},
+	{315, 348},
+	{348, 374},
+	{374, 428},
+	{428, 469},
+	{469, 502},
+	{502, 538},
+	{538, 581},
+	{581, 611},
+	{611, 648},
+	{648, 684},
+	{684, 729},
+	{729, 763},
+	{763, 795},
+	{795, 832},
+	{832, 868},
+	{868, 905},
+	{905, 952},
+	{952, 979},
+	{979, 1024}
+};
+#endif
 
 /************************ Governor internals ***********************/
 
