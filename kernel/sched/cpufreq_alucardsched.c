@@ -229,10 +229,109 @@ static void acgov_update_commit(struct acgov_policy *sg_policy, u64 time,
 	}
 }
 
-static unsigned int resolve_target_freq(struct acgov_policy *sg_policy,
+#ifdef CONFIG_LGE_PM
+static unsigned int resolve_target_freq(struct cpufreq_policy *policy,
+					int index, unsigned int step, bool isup)
+{
+	struct cpufreq_frequency_table *table;
+	unsigned int target_freq = 0;
+	int i = 0;
+
+	if (!policy || !step)
+		return 0;
+
+	table = policy->freq_table;
+	if (isup) {
+		for (i = (index + 1); (table[i].frequency != CPUFREQ_TABLE_END); i++) {
+			if (table[i].frequency != CPUFREQ_ENTRY_INVALID) {
+				target_freq = table[i].frequency;
+				step--;
+				if (step == 0) {
+					break;
+				}
+			}
+		}
+	} else {
+		for (i = (index - 1); i >= 0; i--) {
+			if (table[i].frequency != CPUFREQ_ENTRY_INVALID) {
+				target_freq = table[i].frequency;
+				step--;
+				if (step == 0) {
+					break;
+				}
+			}
+		}
+	}	
+	return target_freq;
+}
+
+static void get_target_capacity(unsigned int cpu, int index,
+					unsigned long *down_cap, unsigned long *up_cap)
+{
+	if (cpu < 2) {
+		*down_cap = little_capacity[index][0];
+		*up_cap = little_capacity[index][1];
+	} else {
+		*down_cap = big_capacity[index][0];
+		*up_cap = big_capacity[index][1];
+	}
+}
+
+/**
+ * get_next_freq - Compute a new frequency for a given cpufreq policy.
+ * @sg_cpu: alucardsched cpu object to compute the new frequency for.
+ * @util: Current CPU utilization.
+ * @max: CPU capacity.
+ *
+ * The lowest driver-supported frequency which is equal or greater than the raw
+ * next_freq (as calculated above) is returned, subject to policy min/max and
+ * cpufreq driver limitations.
+ */
+static unsigned int get_next_freq(struct acgov_cpu *sg_cpu, unsigned long util,
+				  unsigned long max)
+{
+	struct acgov_policy *sg_policy = sg_cpu->sg_policy;
+	struct cpufreq_policy *policy = sg_policy->policy;
+	struct acgov_tunables *tunables = sg_policy->tunables;
+	unsigned int freq_responsiveness = tunables->freq_responsiveness;
+	int pump_inc_step = tunables->pump_inc_step;
+	int pump_dec_step = tunables->pump_dec_step;
+	unsigned int next_freq = 0;
+	unsigned long down_cap = 0, up_cap = 0;
+	unsigned long cur_util =
+			util + ((util * tunables->boost_perc) / 100);
+	int index;
+
+	index = cpufreq_frequency_table_get_index(policy, policy->cur);
+	if (index < 0)
+		goto skip;
+	if (policy->cur < freq_responsiveness) {
+		pump_inc_step = tunables->pump_inc_step_at_min_freq;
+		pump_dec_step = tunables->pump_dec_step_at_min_freq;
+	}
+	get_target_capacity(policy->cpu, index, &down_cap, &up_cap);
+	if (cur_util >= up_cap
+		&& policy->cur < policy->max) {
+		next_freq = resolve_target_freq(policy,
+			index, pump_inc_step, true);
+	} else if (cur_util < down_cap
+		&& policy->cur > policy->min) {
+		next_freq = resolve_target_freq(policy,
+			index, pump_dec_step, false);
+	}
+skip:
+	if (sg_policy->next_freq == UINT_MAX && !next_freq) {
+		next_freq = arch_scale_freq_invariant() ?
+				policy->cpuinfo.max_freq : policy->cur;
+		next_freq = (next_freq + (next_freq >> 2)) * util / max;
+		return cpufreq_driver_resolve_freq(policy, next_freq);
+	}
+	return next_freq;
+}
+#else
+static unsigned int resolve_target_freq(struct cpufreq_policy *policy,
 					unsigned int step, bool isup)
 {
-	struct cpufreq_policy *policy = sg_policy->policy;
 	struct cpufreq_frequency_table *table;
 	struct cpufreq_frequency_table *pos;
 	unsigned int target_freq = 0, freq;
@@ -303,11 +402,11 @@ static unsigned int get_next_freq(struct acgov_cpu *sg_cpu, unsigned long util,
 	}
 	if (cur_load >= target_load
 		&& policy->cur < policy->max) {
-		next_freq = resolve_target_freq(sg_policy,
+		next_freq = resolve_target_freq(policy,
 			pump_inc_step, true);
 	} else if (cur_load < target_load
 		&& policy->cur > policy->min) {
-		next_freq = resolve_target_freq(sg_policy,
+		next_freq = resolve_target_freq(policy,
 			pump_dec_step, false);
 	}
 	if (sg_policy->next_freq == UINT_MAX && !next_freq) {
