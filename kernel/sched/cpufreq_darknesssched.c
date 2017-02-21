@@ -92,12 +92,14 @@ static DEFINE_PER_CPU(struct dkgov_tunables, cached_tunables);
 static unsigned long little_capacity[LITTLE_NFREQS] = {
 	0,
 	149,
+	188,
 	225,
 	257,
 	281,
 	315,
 	368,
 	406,
+	428,
 	469,
 	502,
 	538,
@@ -105,7 +107,8 @@ static unsigned long little_capacity[LITTLE_NFREQS] = {
 	611,
 	648,
 	684,
-	729
+	729,
+	
 };
 
 static unsigned long big_capacity[BIG_NFREQS] = {
