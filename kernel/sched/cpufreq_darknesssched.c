@@ -87,7 +87,7 @@ struct dkgov_cpu {
 static DEFINE_PER_CPU(struct dkgov_cpu, dkgov_cpu);
 static DEFINE_PER_CPU(struct dkgov_tunables, cached_tunables);
 
-#define LITTLE_NFREQS				16
+#define LITTLE_NFREQS				18
 #define BIG_NFREQS					25
 static unsigned long little_capacity[LITTLE_NFREQS] = {
 	0,
