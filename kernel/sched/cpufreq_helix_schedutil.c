@@ -31,11 +31,15 @@ unsigned long boosted_cpu_util(int cpu);
 #define cpufreq_driver_fast_switch(x, y) 0
 #define cpufreq_enable_fast_switch(x)
 #define cpufreq_disable_fast_switch(x)
+
 #define UP_RATE_LIMIT				1000
 #define DOWN_RATE_LIMIT				1000
+#define BIT_SHIFT 					2
+
 #define UP_RATE_LIMIT_BIGC			4000
 #define DOWN_RATE_LIMIT_BIGC		4000
-#define BIT_SHIFT 					4
+#define BIT_SHIFT_BIGC 				6
+
 #define HXGOV_KTHREAD_PRIORITY		25
 
 struct hxgov_tunables {
@@ -628,9 +632,11 @@ initialize:
 	if (cpu < 2){
 		tunables->up_rate_limit_us = UP_RATE_LIMIT;
 		tunables->down_rate_limit_us = DOWN_RATE_LIMIT;
+		tunables->bit_shift = BIT_SHIFT;
 	} else {
 		tunables->up_rate_limit_us = UP_RATE_LIMIT_BIGC;
 		tunables->down_rate_limit_us = DOWN_RATE_LIMIT_BIGC;
+		tunables->bit_shift = BIT_SHIFT_BIGC;
 	}
 	
 	lat = policy->cpuinfo.transition_latency / NSEC_PER_USEC;
@@ -638,7 +644,6 @@ initialize:
 		tunables->up_rate_limit_us *= lat;
 		tunables->down_rate_limit_us *= lat;
 	}
-	tunables->bit_shift = BIT_SHIFT;
 	
 	pr_debug("tunables data initialized for cpu[%u]\n", cpu);
 out:
