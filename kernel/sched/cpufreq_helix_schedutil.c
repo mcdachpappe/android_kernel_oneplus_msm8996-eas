@@ -32,11 +32,11 @@ unsigned long boosted_cpu_util(int cpu);
 #define cpufreq_enable_fast_switch(x)
 #define cpufreq_disable_fast_switch(x)
 #define UP_RATE_LIMIT				1000
-#define DOWN_RATE_LIMIT				3000
+#define DOWN_RATE_LIMIT				1000
 #define UP_RATE_LIMIT_BIGC			4000
 #define DOWN_RATE_LIMIT_BIGC		4000
 #define BIT_SHIFT 					4
-#define HXGOV_KTHREAD_PRIORITY		50
+#define HXGOV_KTHREAD_PRIORITY		25
 
 struct hxgov_tunables {
 	struct gov_attr_set attr_set;
@@ -138,14 +138,13 @@ static void hxgov_update_commit(struct hxgov_policy *sg_policy, u64 time,
 	if (hxgov_up_down_rate_limit(sg_policy, time, next_freq))
 		return;
 
-	sg_policy->last_freq_update_time = time;
-
 	if (policy->fast_switch_enabled) {
 		if (sg_policy->next_freq == next_freq) {
 			trace_cpu_frequency(policy->cur, smp_processor_id());
 			return;
 		}
 		sg_policy->next_freq = next_freq;
+		sg_policy->last_freq_update_time = time;
 		next_freq = cpufreq_driver_fast_switch(policy, next_freq);
 		if (next_freq == CPUFREQ_ENTRY_INVALID)
 			return;
@@ -154,6 +153,7 @@ static void hxgov_update_commit(struct hxgov_policy *sg_policy, u64 time,
 		trace_cpu_frequency(next_freq, smp_processor_id());
 	} else if (sg_policy->next_freq != next_freq) {
 		sg_policy->next_freq = next_freq;
+		sg_policy->last_freq_update_time = time;
 		sg_policy->work_in_progress = true;
 		irq_work_queue(&sg_policy->irq_work);
 	}
@@ -533,10 +533,10 @@ static int hxgov_kthread_create(struct hxgov_policy *sg_policy)
 	init_kthread_work(&sg_policy->work, hxgov_work);
 	init_kthread_worker(&sg_policy->worker);
 	thread = kthread_create(kthread_worker_fn, &sg_policy->worker,
-				"sugov:%d",
+				"hxgov:%d",
 				cpumask_first(policy->related_cpus));
 	if (IS_ERR(thread)) {
-		pr_err("failed to create sugov thread: %ld\n", PTR_ERR(thread));
+		pr_err("failed to create hxgov thread: %ld\n", PTR_ERR(thread));
 		return PTR_ERR(thread);
 	}
 
