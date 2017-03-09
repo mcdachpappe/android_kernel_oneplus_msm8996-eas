@@ -34,11 +34,15 @@ unsigned long boosted_cpu_util(int cpu);
 
 #define UP_RATE_LIMIT				1000
 #define DOWN_RATE_LIMIT				1000
-#define BIT_SHIFT 					2
+#define BIT_SHIFT_1 				2
+#define BIT_SHIFT_2 				3
+#define BIT_SHIFT_3 				4
 
 #define UP_RATE_LIMIT_BIGC			4000
 #define DOWN_RATE_LIMIT_BIGC		4000
-#define BIT_SHIFT_BIGC 				6
+#define BIT_SHIFT_1_BIGC 			2
+#define BIT_SHIFT_2_BIGC 			4
+#define BIT_SHIFT_3_BIGC 			6
 
 #define HXGOV_KTHREAD_PRIORITY		25
 
@@ -46,7 +50,9 @@ struct hxgov_tunables {
 	struct gov_attr_set attr_set;
 	unsigned int up_rate_limit_us;
 	unsigned int down_rate_limit_us;
-	unsigned int bit_shift;
+	unsigned int bit_shift1;
+	unsigned int bit_shift2;
+	unsigned int bit_shift3;
 };
 
 struct hxgov_policy {
@@ -192,8 +198,17 @@ static unsigned int get_next_freq(struct hxgov_policy *sg_policy,
 	struct hxgov_tunables *tunables = sg_policy->tunables;
 	unsigned int freq = arch_scale_freq_invariant() ?
 				policy->cpuinfo.max_freq : policy->cur;
-
-	freq = (freq + (freq >> tunables->bit_shift)) * util / max;
+	unsigned long load = util / max * 100;
+	int bit_shift = 0;
+	
+	if(load <= 30)
+		bit_shift = tunables->bit_shift1;
+	else if (load <= 70 && load > 30)
+		bit_shift = tunables->bit_shift2;
+	else
+		bit_shift = tunables->bit_shift3;
+		
+	freq = (freq + (freq >> bit_shift)) * util / max;
 
 	if (freq == sg_policy->cached_raw_freq && sg_policy->next_freq != UINT_MAX)
 		return sg_policy->next_freq;
@@ -417,11 +432,25 @@ static ssize_t down_rate_limit_us_show(struct gov_attr_set *attr_set, char *buf)
 	return sprintf(buf, "%u\n", tunables->down_rate_limit_us);
 }
 
-static ssize_t bit_shift_show(struct gov_attr_set *attr_set, char *buf)
+static ssize_t bit_shift1_show(struct gov_attr_set *attr_set, char *buf)
 {
 	struct hxgov_tunables *tunables = to_hxgov_tunables(attr_set);
 
-	return sprintf(buf, "%u\n", tunables->bit_shift);
+	return sprintf(buf, "%u\n", tunables->bit_shift1);
+}
+
+static ssize_t bit_shift2_show(struct gov_attr_set *attr_set, char *buf)
+{
+	struct hxgov_tunables *tunables = to_hxgov_tunables(attr_set);
+
+	return sprintf(buf, "%u\n", tunables->bit_shift2);
+}
+
+static ssize_t bit_shift3_show(struct gov_attr_set *attr_set, char *buf)
+{
+	struct hxgov_tunables *tunables = to_hxgov_tunables(attr_set);
+
+	return sprintf(buf, "%u\n", tunables->bit_shift3);
 }
  
 
@@ -465,7 +494,7 @@ static ssize_t down_rate_limit_us_store(struct gov_attr_set *attr_set,
 	return count;
 }
 
-static ssize_t bit_shift_store(struct gov_attr_set *attr_set,
+static ssize_t bit_shift1_store(struct gov_attr_set *attr_set,
 					const char *buf, size_t count)
 {
 	struct hxgov_tunables *tunables = to_hxgov_tunables(attr_set);
@@ -477,22 +506,66 @@ static ssize_t bit_shift_store(struct gov_attr_set *attr_set,
 	value = min(max(0,value), 10);
 	
 	
-	if (value == tunables->bit_shift)
+	if (value == tunables->bit_shift1)
 		return count;
 		
-	tunables->bit_shift = value;
+	tunables->bit_shift1 = value;
+	
+	return count;
+}
+
+static ssize_t bit_shift2_store(struct gov_attr_set *attr_set,
+					const char *buf, size_t count)
+{
+	struct hxgov_tunables *tunables = to_hxgov_tunables(attr_set);
+	int value;
+
+	if (kstrtouint(buf, 10, &value))
+		return -EINVAL;
+
+	value = min(max(0,value), 10);
+	
+	
+	if (value == tunables->bit_shift2)
+		return count;
+		
+	tunables->bit_shift2 = value;
+	
+	return count;
+}
+
+static ssize_t bit_shift3_store(struct gov_attr_set *attr_set,
+					const char *buf, size_t count)
+{
+	struct hxgov_tunables *tunables = to_hxgov_tunables(attr_set);
+	int value;
+
+	if (kstrtouint(buf, 10, &value))
+		return -EINVAL;
+
+	value = min(max(0,value), 10);
+	
+	
+	if (value == tunables->bit_shift3)
+		return count;
+		
+	tunables->bit_shift3 = value;
 	
 	return count;
 }
 
 static struct governor_attr up_rate_limit_us = __ATTR_RW(up_rate_limit_us);
 static struct governor_attr down_rate_limit_us = __ATTR_RW(down_rate_limit_us);
-static struct governor_attr bit_shift = __ATTR_RW(bit_shift);
+static struct governor_attr bit_shift1 = __ATTR_RW(bit_shift1);
+static struct governor_attr bit_shift2 = __ATTR_RW(bit_shift2);
+static struct governor_attr bit_shift3 = __ATTR_RW(bit_shift3);
 
 static struct attribute *hxgov_attributes[] = {
 	&up_rate_limit_us.attr,
 	&down_rate_limit_us.attr,
-	&bit_shift.attr,
+	&bit_shift1.attr,
+	&bit_shift2.attr,
+	&bit_shift3.attr,
 	NULL
 };
 
@@ -604,7 +677,9 @@ static void store_tunables_data(struct hxgov_tunables *tunables,
 		return;
 	ptunables->up_rate_limit_us = tunables->up_rate_limit_us;
 	ptunables->down_rate_limit_us = tunables->down_rate_limit_us;
-	ptunables->bit_shift = tunables->bit_shift;
+	ptunables->bit_shift1 = tunables->bit_shift1;
+	ptunables->bit_shift2 = tunables->bit_shift2;
+	ptunables->bit_shift3 = tunables->bit_shift3;
 
 	pr_debug("tunables data saved for cpu[%u]\n", cpu);
 }
@@ -623,7 +698,9 @@ static void get_tunables_data(struct hxgov_tunables *tunables,
 	if (ptunables->up_rate_limit_us > 0) {
 		tunables->up_rate_limit_us = ptunables->up_rate_limit_us;
 		tunables->down_rate_limit_us = ptunables->down_rate_limit_us;
-		tunables->bit_shift = ptunables->bit_shift;
+		tunables->bit_shift1 = ptunables->bit_shift1;
+		tunables->bit_shift2 = ptunables->bit_shift2;
+		tunables->bit_shift3 = ptunables->bit_shift3;
 		pr_debug("tunables data restored for cpu[%u]\n", cpu);
 		goto out;
 	}
@@ -632,11 +709,15 @@ initialize:
 	if (cpu < 2){
 		tunables->up_rate_limit_us = UP_RATE_LIMIT;
 		tunables->down_rate_limit_us = DOWN_RATE_LIMIT;
-		tunables->bit_shift = BIT_SHIFT;
+		tunables->bit_shift1 = BIT_SHIFT_1;
+		tunables->bit_shift2 = BIT_SHIFT_2;
+		tunables->bit_shift3 = BIT_SHIFT_3;
 	} else {
 		tunables->up_rate_limit_us = UP_RATE_LIMIT_BIGC;
 		tunables->down_rate_limit_us = DOWN_RATE_LIMIT_BIGC;
-		tunables->bit_shift = BIT_SHIFT_BIGC;
+		tunables->bit_shift1 = BIT_SHIFT_1_BIGC;
+		tunables->bit_shift2 = BIT_SHIFT_2_BIGC;
+		tunables->bit_shift3 = BIT_SHIFT_3_BIGC;
 	}
 	
 	lat = policy->cpuinfo.transition_latency / NSEC_PER_USEC;
