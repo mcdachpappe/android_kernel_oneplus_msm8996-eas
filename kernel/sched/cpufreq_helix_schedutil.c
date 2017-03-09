@@ -198,16 +198,26 @@ static unsigned int get_next_freq(struct hxgov_policy *sg_policy,
 	struct hxgov_tunables *tunables = sg_policy->tunables;
 	unsigned int freq = arch_scale_freq_invariant() ?
 				policy->cpuinfo.max_freq : policy->cur;
+	unsigned int cpu = cpumask_first(policy->related_cpus);
 	unsigned long load = util / max * 100;
 	int bit_shift = 0;
 	
-	if(load <= 30)
-		bit_shift = tunables->bit_shift1;
-	else if (load <= 70 && load > 30)
-		bit_shift = tunables->bit_shift2;
-	else
-		bit_shift = tunables->bit_shift3;
-		
+	if (cpu < 2){
+		if(load <= 50)
+			bit_shift = tunables->bit_shift1;
+		else if (load <= 75 && load > 50)
+			bit_shift = tunables->bit_shift2;
+		else
+			bit_shift = tunables->bit_shift3;
+	} else {
+		if(load <= 25)
+			bit_shift = tunables->bit_shift1;
+		else if (load <= 50 && load > 25)
+			bit_shift = tunables->bit_shift2;
+		else
+			bit_shift = tunables->bit_shift3;
+	}
+	
 	freq = (freq + (freq >> bit_shift)) * util / max;
 
 	if (freq == sg_policy->cached_raw_freq && sg_policy->next_freq != UINT_MAX)
