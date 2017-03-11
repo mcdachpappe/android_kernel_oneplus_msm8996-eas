@@ -37,11 +37,11 @@ unsigned long boosted_cpu_util(int cpu);
 #define BIT_SHIFT_1 				2
 #define BIT_SHIFT_2 				3
 #define BIT_SHIFT_3 				4
-#define TARGET_LOAD_1				50
-#define TARGET_LOAD_2				70
+#define TARGET_LOAD_1				55
+#define TARGET_LOAD_2				75
 
-#define UP_RATE_LIMIT_BIGC			4000
-#define DOWN_RATE_LIMIT_BIGC		4000
+#define UP_RATE_LIMIT_BIGC			1000
+#define DOWN_RATE_LIMIT_BIGC		1000
 #define BIT_SHIFT_1_BIGC 			2
 #define BIT_SHIFT_2_BIGC 			4
 #define BIT_SHIFT_3_BIGC 			6
