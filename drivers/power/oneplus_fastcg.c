@@ -596,7 +596,7 @@ static void fastcg_work_func(struct work_struct *work)
 	struct fastchg_device_info *di = container_of(work,
 			struct fastchg_device_info,
 			fastcg_work);
-	pr_debug("\n");
+	pr_debug("%s\n", __func__);
 	if (di->irq_enabled) {
 		free_irq(di->irq, di);
 		msleep(25);
