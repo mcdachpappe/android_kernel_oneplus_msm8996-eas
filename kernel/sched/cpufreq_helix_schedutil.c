@@ -684,7 +684,7 @@ static struct kobj_type hxgov_tunables_ktype = {
 };
 
 /********************** cpufreq governor interface *********************/
-#ifndef CONFIG_CPU_FREQ_DEFAULT_GOV_helix_schedutil
+#ifndef CONFIG_CPU_FREQ_DEFAULT_GOV_HELIX
 static
 #endif
 struct cpufreq_governor cpufreq_gov_helix_schedutil;
