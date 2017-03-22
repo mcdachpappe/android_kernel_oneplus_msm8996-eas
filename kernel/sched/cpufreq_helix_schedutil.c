@@ -199,14 +199,15 @@ static unsigned int get_next_freq(struct hxgov_cpu *sg_cpu, unsigned long util,
 	struct hxgov_tunables *tunables = sg_policy->tunables;
 	unsigned int freq = arch_scale_freq_invariant() ?
 				policy->cpuinfo.max_freq : policy->cur;
-	unsigned long load = util / max * 100;
+	unsigned long load = 100 * util / max;
 	
-	if(load <= tunables->target_load1)
+	if(load < tunables->target_load1){
 		freq = (freq + (freq >> tunables->bit_shift1)) * util / max;
-	else if (load <= tunables->target_load2 && load > tunables->target_load1)
+	} else if (load >= tunables->target_load1 && load < tunables->target_load2){
 		freq = freq * util / max;
-	else
+	} else {
 		freq = (freq - (freq >> tunables->bit_shift2)) * util / max;
+	}
 
 	if (freq == sg_cpu->cached_raw_freq && sg_policy->next_freq != UINT_MAX)
 		return sg_policy->next_freq;
