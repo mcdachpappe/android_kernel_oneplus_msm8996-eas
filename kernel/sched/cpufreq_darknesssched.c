@@ -21,9 +21,7 @@
 
 #include "sched.h"
 #include "tune.h"
-#ifdef CONFIG_STATE_NOTIFIER
-#include <linux/state_notifier.h>
-#endif
+#include <linux/display_state.h>
 
 #ifdef CONFIG_SCHED_WALT
 unsigned long boosted_cpu_util(int cpu);
@@ -38,9 +36,7 @@ unsigned long boosted_cpu_util(int cpu);
 #define DKGOV_KTHREAD_PRIORITY	50
 
 #define BOOST_PERC					5
-#ifdef CONFIG_STATE_NOTIFIER
 #define DEFAULT_RATE_LIMIT_SUSP_NS ((s64)(80000 * NSEC_PER_USEC))
-#endif
 
 struct dkgov_tunables {
 	struct gov_attr_set attr_set;
@@ -63,10 +59,8 @@ struct dkgov_policy {
 	s64 min_rate_limit_ns;
 	s64 up_rate_delay_ns;
 	s64 down_rate_delay_ns;
-#ifdef CONFIG_STATE_NOTIFIER
 	s64 up_rate_delay_prev_ns;
 	s64 down_rate_delay_prev_ns;
-#endif
 	unsigned int next_freq;
 
 	/* The next fields are only needed if fast switch cannot be used. */
@@ -177,16 +171,18 @@ static bool dkgov_should_update_freq(struct dkgov_policy *sg_policy, u64 time)
 static bool dkgov_up_down_rate_limit(struct dkgov_policy *sg_policy, u64 time,
 				     unsigned int next_freq)
 {
+	/* Create display state boolean */
+	const bool display_on = is_display_on();
 	s64 delta_ns;
 
 	delta_ns = time - sg_policy->last_freq_update_time;
-#ifdef CONFIG_STATE_NOTIFIER
-	if (!state_suspended) {
+
+	if (!display_on) {
 		if (sg_policy->up_rate_delay_ns != sg_policy->up_rate_delay_prev_ns)
 			sg_policy->up_rate_delay_ns = sg_policy->up_rate_delay_prev_ns;
 		if (sg_policy->down_rate_delay_ns != sg_policy->down_rate_delay_prev_ns)
 			sg_policy->down_rate_delay_ns = sg_policy->down_rate_delay_prev_ns;
-	} else if (state_suspended) {
+	} else if (display_on) {
 		if (sg_policy->up_rate_delay_ns != DEFAULT_RATE_LIMIT_SUSP_NS) {
 			sg_policy->up_rate_delay_prev_ns = sg_policy->up_rate_delay_ns;
 			sg_policy->up_rate_delay_ns
@@ -200,7 +196,7 @@ static bool dkgov_up_down_rate_limit(struct dkgov_policy *sg_policy, u64 time,
 					DEFAULT_RATE_LIMIT_SUSP_NS);
 		}
 	}
-#endif
+
 	if (next_freq > sg_policy->next_freq &&
 	    delta_ns < sg_policy->up_rate_delay_ns)
 			return true;
@@ -558,9 +554,7 @@ static ssize_t up_rate_limit_us_store(struct gov_attr_set *attr_set,
 
 	list_for_each_entry(sg_policy, &attr_set->policy_list, tunables_hook) {
 		sg_policy->up_rate_delay_ns = rate_limit_us * NSEC_PER_USEC;
-#ifdef CONFIG_STATE_NOTIFIER
 		sg_policy->up_rate_delay_prev_ns = rate_limit_us * NSEC_PER_USEC;
-#endif
 		update_min_rate_limit_us(sg_policy);
 	}
 
@@ -582,9 +576,7 @@ static ssize_t down_rate_limit_us_store(struct gov_attr_set *attr_set,
 
 	list_for_each_entry(sg_policy, &attr_set->policy_list, tunables_hook) {
 		sg_policy->down_rate_delay_ns = rate_limit_us * NSEC_PER_USEC;
-#ifdef CONFIG_STATE_NOTIFIER
 		sg_policy->down_rate_delay_prev_ns = rate_limit_us * NSEC_PER_USEC;
-#endif
 		update_min_rate_limit_us(sg_policy);
 	}
 
@@ -869,12 +861,10 @@ static int dkgov_start(struct cpufreq_policy *policy)
 		sg_policy->tunables->up_rate_limit_us * NSEC_PER_USEC;
 	sg_policy->down_rate_delay_ns =
 		sg_policy->tunables->down_rate_limit_us * NSEC_PER_USEC;
-#ifdef CONFIG_STATE_NOTIFIER
 	sg_policy->up_rate_delay_prev_ns =
 		sg_policy->tunables->up_rate_limit_us * NSEC_PER_USEC;
 	sg_policy->down_rate_delay_prev_ns =
 		sg_policy->tunables->down_rate_limit_us * NSEC_PER_USEC;
-#endif
 	update_min_rate_limit_us(sg_policy);
 	sg_policy->last_freq_update_time = 0;
 	sg_policy->next_freq = UINT_MAX;
