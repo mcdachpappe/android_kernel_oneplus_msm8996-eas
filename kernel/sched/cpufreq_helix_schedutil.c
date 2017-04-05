@@ -30,20 +30,18 @@ unsigned long boosted_cpu_util(int cpu);
 #define cpufreq_disable_fast_switch(x)
 
 #define UP_RATE_LIMIT				1000
-#define DOWN_RATE_LIMIT				1000
-#define BIT_SHIFT_1 				2
-#define BIT_SHIFT_2 				3
-#define BIT_SHIFT_3 				4
-#define TARGET_LOAD_1				55
-#define TARGET_LOAD_2				75
+#define DOWN_RATE_LIMIT				5000
+#define BIT_SHIFT_1 				9
+#define BIT_SHIFT_2 				9
+#define TARGET_LOAD_1				32
+#define TARGET_LOAD_2				73
 
 #define UP_RATE_LIMIT_BIGC			1000
-#define DOWN_RATE_LIMIT_BIGC		1000
-#define BIT_SHIFT_1_BIGC 			2
-#define BIT_SHIFT_2_BIGC 			4
-#define BIT_SHIFT_3_BIGC 			6
-#define TARGET_LOAD_1_BIGC 			25
-#define TARGET_LOAD_2_BIGC 			50
+#define DOWN_RATE_LIMIT_BIGC		5000
+#define BIT_SHIFT_1_BIGC 			10
+#define BIT_SHIFT_2_BIGC 			6
+#define TARGET_LOAD_1_BIGC 			24
+#define TARGET_LOAD_2_BIGC 			71
 
 #define HXGOV_KTHREAD_PRIORITY		25
 
@@ -53,7 +51,6 @@ struct hxgov_tunables {
 	unsigned int down_rate_limit_us;
 	unsigned int bit_shift1;
 	unsigned int bit_shift2;
-	unsigned int bit_shift3;
 	unsigned int target_load1;
 	unsigned int target_load2;
 };
@@ -70,7 +67,6 @@ struct hxgov_policy {
 	s64 up_rate_delay_ns;
 	s64 down_rate_delay_ns;
 	unsigned int next_freq;
-	unsigned int cached_raw_freq;
 
 	/* The next fields are only needed if fast switch cannot be used. */
 	struct irq_work irq_work;
@@ -87,6 +83,7 @@ struct hxgov_cpu {
 	struct update_util_data update_util;
 	struct hxgov_policy *sg_policy;
 
+	unsigned int cached_raw_freq;
 	unsigned long iowait_boost;
 	unsigned long iowait_boost_max;
 	u64 last_update;
@@ -151,13 +148,14 @@ static void hxgov_update_commit(struct hxgov_policy *sg_policy, u64 time,
 	if (hxgov_up_down_rate_limit(sg_policy, time, next_freq))
 		return;
 
+	sg_policy->last_freq_update_time = time;
+
 	if (policy->fast_switch_enabled) {
 		if (sg_policy->next_freq == next_freq) {
 			trace_cpu_frequency(policy->cur, smp_processor_id());
 			return;
 		}
 		sg_policy->next_freq = next_freq;
-		sg_policy->last_freq_update_time = time;
 		next_freq = cpufreq_driver_fast_switch(policy, next_freq);
 		if (next_freq == CPUFREQ_ENTRY_INVALID)
 			return;
@@ -166,7 +164,6 @@ static void hxgov_update_commit(struct hxgov_policy *sg_policy, u64 time,
 		trace_cpu_frequency(next_freq, smp_processor_id());
 	} else if (sg_policy->next_freq != next_freq) {
 		sg_policy->next_freq = next_freq;
-		sg_policy->last_freq_update_time = time;
 		sg_policy->work_in_progress = true;
 		irq_work_queue(&sg_policy->irq_work);
 	}
@@ -174,7 +171,7 @@ static void hxgov_update_commit(struct hxgov_policy *sg_policy, u64 time,
 
 /**
  * get_next_freq - Compute a new frequency for a given cpufreq policy.
- * @sg_policy: helix_schedutil policy object to compute the new frequency for.
+ * @sg_cpu: helix_schedutil cpu object to compute the new frequency for.
  * @util: Current CPU utilization.
  * @max: CPU capacity.
  *
@@ -194,40 +191,27 @@ static void hxgov_update_commit(struct hxgov_policy *sg_policy, u64 time,
  * next_freq (as calculated above) is returned, subject to policy min/max and
  * cpufreq driver limitations.
  */
-static unsigned int get_next_freq(struct hxgov_policy *sg_policy,
-				  unsigned long util, unsigned long max)
+static unsigned int get_next_freq(struct hxgov_cpu *sg_cpu, unsigned long util,
+				  unsigned long max)
 {
+	struct hxgov_policy *sg_policy = sg_cpu->sg_policy;
 	struct cpufreq_policy *policy = sg_policy->policy;
 	struct hxgov_tunables *tunables = sg_policy->tunables;
 	unsigned int freq = arch_scale_freq_invariant() ?
 				policy->cpuinfo.max_freq : policy->cur;
-	unsigned int cpu = cpumask_first(policy->related_cpus);
-	unsigned long load = util / max * 100;
-	int bit_shift = 0;
-	unsigned int target_load1 = tunables->target_load1;
-	unsigned int target_load2 = tunables->target_load2;
+	unsigned long load = 100 * util / max;
 	
-	if (cpu < 2){
-		if(load <= target_load1)
-			bit_shift = tunables->bit_shift1;
-		else if (load <= target_load2 && load > target_load1)
-			bit_shift = tunables->bit_shift2;
-		else
-			bit_shift = tunables->bit_shift3;
+	if(load < tunables->target_load1){
+		freq = (freq + (freq >> tunables->bit_shift1)) * util / max;
+	} else if (load >= tunables->target_load1 && load < tunables->target_load2){
+		freq = freq * util / max;
 	} else {
-		if(load <= target_load1)
-			bit_shift = tunables->bit_shift1;
-		else if (load <= target_load2 && load > target_load1)
-			bit_shift = tunables->bit_shift2;
-		else
-			bit_shift = tunables->bit_shift3;
+		freq = (freq - (freq >> tunables->bit_shift2)) * util / max;
 	}
-	
-	freq = (freq + (freq >> bit_shift)) * util / max;
 
-	if (freq == sg_policy->cached_raw_freq && sg_policy->next_freq != UINT_MAX)
+	if (freq == sg_cpu->cached_raw_freq && sg_policy->next_freq != UINT_MAX)
 		return sg_policy->next_freq;
-	sg_policy->cached_raw_freq = freq;
+	sg_cpu->cached_raw_freq = freq;
 	return cpufreq_driver_resolve_freq(policy, freq);
 }
 
@@ -285,6 +269,54 @@ static void hxgov_iowait_boost(struct hxgov_cpu *sg_cpu, unsigned long *util,
 	sg_cpu->iowait_boost >>= 1;
 }
 
+#ifdef CONFIG_CAPACITY_CLAMPING
+
+static inline
+void cap_clamp_cpu_range(unsigned int cpu, unsigned int *cap_min,
+			 unsigned int *cap_max)
+{
+	struct cap_clamp_cpu *cgc;
+
+	*cap_min = 0;
+	cgc = &cpu_rq(cpu)->cap_clamp_cpu[CAP_CLAMP_MIN];
+	if (cgc->node)
+		*cap_min = cgc->value;
+
+	*cap_max = SCHED_CAPACITY_SCALE;
+	cgc = &cpu_rq(cpu)->cap_clamp_cpu[CAP_CLAMP_MAX];
+	if (cgc->node)
+		*cap_max = cgc->value;
+}
+
+static inline
+unsigned int cap_clamp_cpu_util(unsigned int cpu, unsigned int util)
+{
+	unsigned int cap_max, cap_min;
+
+	cap_clamp_cpu_range(cpu, &cap_min, &cap_max);
+	return clamp(util, cap_min, cap_max);
+}
+
+static inline
+void cap_clamp_compose(unsigned int *cap_min, unsigned int *cap_max,
+		       unsigned int j_cap_min, unsigned int j_cap_max)
+{
+	*cap_min = max(*cap_min, j_cap_min);
+	*cap_max = max(*cap_max, j_cap_max);
+}
+
+#define cap_clamp_util_range(util, cap_min, cap_max) \
+	clamp_t(typeof(util), util, cap_min, cap_max)
+
+#else
+
+#define cap_clamp_cpu_range(cpu, cap_min, cap_max) { }
+#define cap_clamp_cpu_util(cpu, util) util
+#define cap_clamp_compose(cap_min, cap_max, j_cap_min, j_cap_max) { }
+#define cap_clamp_util_range(util, cap_min, cap_max) util
+
+#endif /* CONFIG_CAPACITY_CLAMPING */
+
 static void hxgov_update_single(struct update_util_data *hook, u64 time,
 				unsigned int flags)
 {
@@ -301,29 +333,44 @@ static void hxgov_update_single(struct update_util_data *hook, u64 time,
 		return;
 
 	if (flags & SCHED_CPUFREQ_DL) {
-		next_f = policy->cpuinfo.max_freq;
+		util = cap_clamp_cpu_util(smp_processor_id(),
+					  SCHED_CAPACITY_SCALE);
+		next_f = get_next_freq(sg_cpu, util, policy->cpuinfo.max_freq);
 	} else {
 		hxgov_get_util(&util, &max, time);
 		hxgov_iowait_boost(sg_cpu, &util, &max);
-		next_f = get_next_freq(sg_policy, util, max);
+		util = cap_clamp_cpu_util(smp_processor_id(), util);
+		next_f = get_next_freq(sg_cpu, util, max);
 	}
 	hxgov_update_commit(sg_policy, time, next_f);
 }
 
-static unsigned int hxgov_next_freq_shared(struct hxgov_cpu *sg_cpu)
+static unsigned int hxgov_next_freq_shared(struct hxgov_cpu *sg_cpu,
+					   unsigned long util, unsigned long max,
+					   unsigned int flags)
 {
 	struct hxgov_policy *sg_policy = sg_cpu->sg_policy;
 	struct cpufreq_policy *policy = sg_policy->policy;
-	unsigned int max_f = policy->cpuinfo.max_freq;
 	u64 last_freq_update_time = sg_policy->last_freq_update_time;
-	unsigned long util = 0, max = 1;
+	unsigned int cap_max = SCHED_CAPACITY_SCALE;
+	unsigned int cap_min = 0;
 	unsigned int j;
 
+	hxgov_iowait_boost(sg_cpu, &util, &max);
+
+	/* Initialize clamping range based on caller CPU constraints */
+	cap_clamp_cpu_range(smp_processor_id(), &cap_min, &cap_max);
+
 	for_each_cpu(j, policy->cpus) {
-		struct hxgov_cpu *j_sg_cpu = &per_cpu(hxgov_cpu, j);
+		struct hxgov_cpu *j_sg_cpu;
 		unsigned long j_util, j_max;
+		unsigned int j_cap_max, j_cap_min;
 		s64 delta_ns;
 
+		if (j == smp_processor_id())
+			continue;
+
+		j_sg_cpu = &per_cpu(hxgov_cpu, j);
 		/*
 		 * If the CPU utilization was last updated before the previous
 		 * frequency update and the time elapsed between the last update
@@ -337,9 +384,9 @@ static unsigned int hxgov_next_freq_shared(struct hxgov_cpu *sg_cpu)
 			continue;
 		}
 		if (j_sg_cpu->flags & SCHED_CPUFREQ_DL)
-			return max_f;
-
-		j_util = j_sg_cpu->util;
+			j_util = cap_clamp_cpu_util(j, SCHED_CAPACITY_SCALE);
+		else
+			j_util = j_sg_cpu->util;
 		j_max = j_sg_cpu->max;
 		if (j_util * max > j_max * util) {
 			util = j_util;
@@ -347,9 +394,22 @@ static unsigned int hxgov_next_freq_shared(struct hxgov_cpu *sg_cpu)
 		}
 
 		hxgov_iowait_boost(j_sg_cpu, &util, &max);
+
+		/*
+		 * Update clamping range based on this CPU constraints, but
+		 * only if this CPU is not currently idle. Idle CPUs do not
+		 * enforce constraints in a shared frequency domain.
+		 */
+		if (!idle_cpu(j)) {
+			cap_clamp_cpu_range(j, &j_cap_min, &j_cap_max);
+			cap_clamp_compose(&cap_min, &cap_max,
+					  j_cap_min, j_cap_max);
+		}
 	}
 
-	return get_next_freq(sg_policy, util, max);
+	/* Clamp utilization on aggregated CPUs ranges */
+	util = cap_clamp_util_range(util, cap_min, cap_max);
+	return get_next_freq(sg_cpu, util, max);
 }
 
 static void hxgov_update_shared(struct update_util_data *hook, u64 time,
@@ -364,6 +424,12 @@ static void hxgov_update_shared(struct update_util_data *hook, u64 time,
 
 	raw_spin_lock(&sg_policy->update_lock);
 
+	/* CPU is entering IDLE, reset flags without triggering an update */
+	if (flags & SCHED_CPUFREQ_IDLE) {
+		sg_cpu->flags = 0;
+		goto done;
+	}
+
 	sg_cpu->util = util;
 	sg_cpu->max = max;
 	sg_cpu->flags = flags;
@@ -372,10 +438,11 @@ static void hxgov_update_shared(struct update_util_data *hook, u64 time,
 	sg_cpu->last_update = time;
 
 	if (hxgov_should_update_freq(sg_policy, time)) {
-		next_f = hxgov_next_freq_shared(sg_cpu);
+		next_f = hxgov_next_freq_shared(sg_cpu, util, max, flags);
 		hxgov_update_commit(sg_policy, time, next_f);
 	}
 
+done:
 	raw_spin_unlock(&sg_policy->update_lock);
 }
 
@@ -398,15 +465,15 @@ static void hxgov_irq_work(struct irq_work *irq_work)
 	sg_policy = container_of(irq_work, struct hxgov_policy, irq_work);
 
 	/*
-	 * For RT and deadline tasks, the helix_schedutil governor shoots the
-	 * frequency to maximum. Special care must be taken to ensure that this
-	 * kthread doesn't result in the same behavior.
+	 * For Real Time and Deadline tasks, helix_schedutil governor shoots the
+	 * frequency to maximum. And special care must be taken to ensure that
+	 * this kthread doesn't result in that.
 	 *
 	 * This is (mostly) guaranteed by the work_in_progress flag. The flag is
-	 * updated only at the end of the hxgov_work() function and before that
-	 * the helix_schedutil governor rejects all other frequency scaling requests.
+	 * updated only at the end of the hxgov_work() and before that helix_schedutil
+	 * rejects all other frequency scaling requests.
 	 *
-	 * There is a very rare case though, where the RT thread yields right
+	 * Though there is a very rare case where the RT thread yields right
 	 * after the work_in_progress flag is cleared. The effects of that are
 	 * neglected for now.
 	 */
@@ -461,13 +528,6 @@ static ssize_t bit_shift2_show(struct gov_attr_set *attr_set, char *buf)
 	return sprintf(buf, "%u\n", tunables->bit_shift2);
 }
 
-static ssize_t bit_shift3_show(struct gov_attr_set *attr_set, char *buf)
-{
-	struct hxgov_tunables *tunables = to_hxgov_tunables(attr_set);
-
-	return sprintf(buf, "%u\n", tunables->bit_shift3);
-}
-
 static ssize_t target_load1_show(struct gov_attr_set *attr_set, char *buf)
 {
 	struct hxgov_tunables *tunables = to_hxgov_tunables(attr_set);
@@ -481,7 +541,6 @@ static ssize_t target_load2_show(struct gov_attr_set *attr_set, char *buf)
 
 	return sprintf(buf, "%u\n", tunables->target_load2);
 }
- 
 
 static ssize_t up_rate_limit_us_store(struct gov_attr_set *attr_set,
 				      const char *buf, size_t count)
@@ -563,26 +622,6 @@ static ssize_t bit_shift2_store(struct gov_attr_set *attr_set,
 	return count;
 }
 
-static ssize_t bit_shift3_store(struct gov_attr_set *attr_set,
-					const char *buf, size_t count)
-{
-	struct hxgov_tunables *tunables = to_hxgov_tunables(attr_set);
-	int value;
-
-	if (kstrtouint(buf, 10, &value))
-		return -EINVAL;
-
-	value = min(max(0,value), 10);
-	
-	
-	if (value == tunables->bit_shift3)
-		return count;
-		
-	tunables->bit_shift3 = value;
-	
-	return count;
-}
-
 static ssize_t target_load1_store(struct gov_attr_set *attr_set,
 					const char *buf, size_t count)
 {
@@ -627,7 +666,6 @@ static struct governor_attr up_rate_limit_us = __ATTR_RW(up_rate_limit_us);
 static struct governor_attr down_rate_limit_us = __ATTR_RW(down_rate_limit_us);
 static struct governor_attr bit_shift1 = __ATTR_RW(bit_shift1);
 static struct governor_attr bit_shift2 = __ATTR_RW(bit_shift2);
-static struct governor_attr bit_shift3 = __ATTR_RW(bit_shift3);
 static struct governor_attr target_load1 = __ATTR_RW(target_load1);
 static struct governor_attr target_load2 = __ATTR_RW(target_load2);
 
@@ -636,7 +674,6 @@ static struct attribute *hxgov_attributes[] = {
 	&down_rate_limit_us.attr,
 	&bit_shift1.attr,
 	&bit_shift2.attr,
-	&bit_shift3.attr,
 	&target_load1.attr,
 	&target_load2.attr,
 	NULL
@@ -648,8 +685,10 @@ static struct kobj_type hxgov_tunables_ktype = {
 };
 
 /********************** cpufreq governor interface *********************/
-
-static struct cpufreq_governor helix_schedutil_gov;
+#ifndef CONFIG_CPU_FREQ_DEFAULT_GOV_HELIX
+static
+#endif
+struct cpufreq_governor cpufreq_gov_helix_schedutil;
 
 static struct hxgov_policy *hxgov_policy_alloc(struct cpufreq_policy *policy)
 {
@@ -660,12 +699,15 @@ static struct hxgov_policy *hxgov_policy_alloc(struct cpufreq_policy *policy)
 		return NULL;
 
 	sg_policy->policy = policy;
+	init_irq_work(&sg_policy->irq_work, hxgov_irq_work);
+	mutex_init(&sg_policy->work_lock);
 	raw_spin_lock_init(&sg_policy->update_lock);
 	return sg_policy;
 }
 
 static void hxgov_policy_free(struct hxgov_policy *sg_policy)
 {
+	mutex_destroy(&sg_policy->work_lock);
 	kfree(sg_policy);
 }
 
@@ -699,9 +741,6 @@ static int hxgov_kthread_create(struct hxgov_policy *sg_policy)
 
 	sg_policy->thread = thread;
 	kthread_bind_mask(thread, policy->related_cpus);
-	init_irq_work(&sg_policy->irq_work, hxgov_irq_work);
-	mutex_init(&sg_policy->work_lock);
-
 	wake_up_process(thread);
 
 	return 0;
@@ -715,7 +754,6 @@ static void hxgov_kthread_stop(struct hxgov_policy *sg_policy)
 
 	flush_kthread_worker(&sg_policy->worker);
 	kthread_stop(sg_policy->thread);
-	mutex_destroy(&sg_policy->work_lock);
 }
 
 static struct hxgov_tunables *hxgov_tunables_alloc(struct hxgov_policy *sg_policy)
@@ -752,7 +790,6 @@ static void store_tunables_data(struct hxgov_tunables *tunables,
 	ptunables->down_rate_limit_us = tunables->down_rate_limit_us;
 	ptunables->bit_shift1 = tunables->bit_shift1;
 	ptunables->bit_shift2 = tunables->bit_shift2;
-	ptunables->bit_shift3 = tunables->bit_shift3;
 	ptunables->target_load1 = tunables->target_load1;
 	ptunables->target_load2 = tunables->target_load2;
 
@@ -775,7 +812,6 @@ static void get_tunables_data(struct hxgov_tunables *tunables,
 		tunables->down_rate_limit_us = ptunables->down_rate_limit_us;
 		tunables->bit_shift1 = ptunables->bit_shift1;
 		tunables->bit_shift2 = ptunables->bit_shift2;
-		tunables->bit_shift3 = ptunables->bit_shift3;
 		tunables->target_load1 = ptunables->target_load1;
 		tunables->target_load2 = ptunables->target_load2;
 		pr_debug("tunables data restored for cpu[%u]\n", cpu);
@@ -788,7 +824,6 @@ initialize:
 		tunables->down_rate_limit_us = DOWN_RATE_LIMIT;
 		tunables->bit_shift1 = BIT_SHIFT_1;
 		tunables->bit_shift2 = BIT_SHIFT_2;
-		tunables->bit_shift3 = BIT_SHIFT_3;
 		tunables->target_load1 = TARGET_LOAD_1;
 		tunables->target_load2 = TARGET_LOAD_2;
 	} else {
@@ -796,7 +831,6 @@ initialize:
 		tunables->down_rate_limit_us = DOWN_RATE_LIMIT_BIGC;
 		tunables->bit_shift1 = BIT_SHIFT_1_BIGC;
 		tunables->bit_shift2 = BIT_SHIFT_2_BIGC;
-		tunables->bit_shift3 = BIT_SHIFT_3_BIGC;
 		tunables->target_load1 = TARGET_LOAD_1_BIGC;
 		tunables->target_load2 = TARGET_LOAD_2_BIGC;
 	}
@@ -857,17 +891,17 @@ static int hxgov_init(struct cpufreq_policy *policy)
 
 	ret = kobject_init_and_add(&tunables->attr_set.kobj, &hxgov_tunables_ktype,
 				   get_governor_parent_kobj(policy), "%s",
-				   helix_schedutil_gov.name);
+				   cpufreq_gov_helix_schedutil.name);
 	if (ret)
 		goto fail;
 
-out:
+ out:
 	mutex_unlock(&global_tunables_lock);
 
 	cpufreq_enable_fast_switch(policy);
 	return 0;
 
-fail:
+ fail:
 	policy->governor_data = NULL;
 	hxgov_tunables_free(tunables);
 
@@ -920,7 +954,6 @@ static int hxgov_start(struct cpufreq_policy *policy)
 	sg_policy->next_freq = UINT_MAX;
 	sg_policy->work_in_progress = false;
 	sg_policy->need_freq_update = false;
-	sg_policy->cached_raw_freq = 0;
 
 	for_each_cpu(cpu, policy->cpus) {
 		struct hxgov_cpu *sg_cpu = &per_cpu(hxgov_cpu, cpu);
@@ -931,6 +964,7 @@ static int hxgov_start(struct cpufreq_policy *policy)
 			sg_cpu->max = 0;
 			sg_cpu->flags = SCHED_CPUFREQ_DL;
 			sg_cpu->last_update = 0;
+			sg_cpu->cached_raw_freq = 0;
 			sg_cpu->iowait_boost = 0;
 			sg_cpu->iowait_boost_max = policy->cpuinfo.max_freq;
 			cpufreq_add_update_util_hook(cpu, &sg_cpu->update_util,
@@ -953,10 +987,8 @@ static int hxgov_stop(struct cpufreq_policy *policy)
 
 	synchronize_sched();
 
-	if (!policy->fast_switch_enabled) {
-		irq_work_sync(&sg_policy->irq_work);
-		kthread_cancel_work_sync(&sg_policy->work);
-	}
+	irq_work_sync(&sg_policy->irq_work);
+	kthread_cancel_work_sync(&sg_policy->work);
 
 	return 0;
 }
@@ -998,7 +1030,7 @@ static int cpufreq_helix_schedutil_cb(struct cpufreq_policy *policy,
 #ifndef CONFIG_CPU_FREQ_DEFAULT_GOV_HELIX
 static
 #endif
-struct cpufreq_governor helix_schedutil_gov = {
+struct cpufreq_governor cpufreq_gov_helix_schedutil = {
 	.name = "helix_schedutil",
 	.governor = cpufreq_helix_schedutil_cb,
 	.owner = THIS_MODULE,
@@ -1006,6 +1038,6 @@ struct cpufreq_governor helix_schedutil_gov = {
 
 static int __init hxgov_register(void)
 {
-	return cpufreq_register_governor(&helix_schedutil_gov);
+	return cpufreq_register_governor(&cpufreq_gov_helix_schedutil);
 }
 fs_initcall(hxgov_register);
