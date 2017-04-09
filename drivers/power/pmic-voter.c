@@ -405,10 +405,10 @@ int vote(struct votable *votable, const char *client_str, bool enabled, int val)
 		break;
 	case VOTE_SET_ANY:
 		vote_set_any(votable, client_id,
-				&effective_result, &effective_id);
-		break;
+        	&effective_result, &effective_id);
+    		break;
 	default:
-		return -EINVAL;
+		rc = -EINVAL;
 	}
 
 	/*
