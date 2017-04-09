@@ -404,11 +404,20 @@ int vote(struct votable *votable, const char *client_str, bool enabled, int val)
 		vote_max(votable, client_id, &effective_result, &effective_id);
 		break;
 	case VOTE_SET_ANY:
-		vote_set_any(votable, client_id,
-				&effective_result, &effective_id);
-		break;
+		votable->votes[client_id].value = state;
+		effective_result = vote_set_any(votable);
+		if (effective_result != votable->effective_result) {
+			votable->effective_client_id = client_id;
+			votable->effective_result = effective_result;
+			rc = votable->callback(votable->dev,
+						effective_result, client_id,
+						state, client_id);
+		}
+		goto out;
 	default:
-		return -EINVAL;
+		pr_err("%s: Invalid vote type: %d\n", __func__, votable->type);
+		rc = -EINVAL;
+		goto out;
 	}
 
 	/*
