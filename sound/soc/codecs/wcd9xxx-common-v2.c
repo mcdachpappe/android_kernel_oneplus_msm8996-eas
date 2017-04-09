@@ -477,6 +477,7 @@ static void wcd_clsh_set_hph_mode(struct snd_soc_codec *codec,
 		break;
 	case CLS_H_LP:
 		val = 0x04;
+		gain = DAC_GAIN_0DB;
 		ipeak = DELTA_I_30MA;
 		break;
 	default:
