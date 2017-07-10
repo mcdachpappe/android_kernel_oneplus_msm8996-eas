@@ -3,10 +3,17 @@
 #include <linux/random.h>
 #include <asm/timex.h>
 
-#define NODES        100
-#define PERF_LOOPS   100000
-#define SEARCHES     100
-#define SEARCH_LOOPS 10000
+#define __param(type, name, init, msg)		\
+	static type name = init;		\
+	module_param(name, type, 0444);		\
+	MODULE_PARM_DESC(name, msg);
+
+__param(int, nnodes, 100, "Number of nodes in the interval tree");
+__param(int, perf_loops, 100000, "Number of iterations modifying the tree");
+
+__param(int, nsearches, 100, "Number of searches to the interval tree");
+__param(int, search_loops, 10000, "Number of iterations searching the tree");
+__param(bool, search_all, false, "Searches will iterate all nodes in the tree");
 
 static struct rb_root root = RB_ROOT;
 static struct interval_tree_node nodes[NODES];
@@ -15,13 +22,13 @@ static u32 queries[SEARCHES];
 static struct rnd_state rnd;
 
 static inline unsigned long
-search(unsigned long query, struct rb_root *root)
+search(struct rb_root *root, unsigned long start, unsigned long last)
 {
 	struct interval_tree_node *node;
 	unsigned long results = 0;
 
-	for (node = interval_tree_iter_first(root, query, query); node;
-	     node = interval_tree_iter_next(node, query, query))
+	for (node = interval_tree_iter_first(root, start, last); node;
+	     node = interval_tree_iter_next(node, start, last))
 		results++;
 	return results;
 }
@@ -78,9 +85,13 @@ static int interval_tree_test_init(void)
 	time1 = get_cycles();
 
 	results = 0;
-	for (i = 0; i < SEARCH_LOOPS; i++)
-		for (j = 0; j < SEARCHES; j++)
-			results += search(queries[j], &root);
+	for (i = 0; i < search_loops; i++)
+		for (j = 0; j < nsearches; j++) {
+			unsigned long start = search_all ? 0 : queries[j];
+			unsigned long last = search_all ? max_endpoint : queries[j];
+
+			results += search(&root, start, last);
+		}
 
 	time2 = get_cycles();
 	time = time2 - time1;
