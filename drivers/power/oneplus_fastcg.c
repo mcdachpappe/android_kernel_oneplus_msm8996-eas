@@ -1214,6 +1214,8 @@ static int dash_probe(struct i2c_client *client, const struct i2c_device_id *id)
 
 err_misc_register_failed:
 	pm_qos_remove_request(&big_cpu_update_freq);
+	wake_lock_destroy(&di->fastchg_wake_lock);
+	wake_lock_destroy(&di->fastchg_update_fireware_lock);
 err_read_dt:
 	kfree(di);
 err_check_functionality_failed:
@@ -1240,6 +1242,9 @@ static int dash_remove(struct i2c_client *client)
 
 	wake_lock_destroy(&di->fastchg_wake_lock);
         wake_lock_destroy(&di->fastchg_update_fireware_lock);
+
+	wake_lock_destroy(&di->fastchg_wake_lock);
+	wake_lock_destroy(&di->fastchg_update_fireware_lock);
 
 	return 0;
 }
