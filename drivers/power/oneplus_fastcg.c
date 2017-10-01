@@ -1210,6 +1210,9 @@ static int dash_remove(struct i2c_client *client)
 	wake_lock_destroy(&di->fastchg_wake_lock);
         wake_lock_destroy(&di->fastchg_update_fireware_lock);
 
+	wake_lock_destroy(&di->fastchg_wake_lock);
+        wake_lock_destroy(&di->fastchg_update_fireware_lock);
+
 	return 0;
 }
 
