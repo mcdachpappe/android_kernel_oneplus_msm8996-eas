@@ -30,6 +30,7 @@
 #include <linux/vmalloc.h>
 #include <linux/aio.h>
 #include "logger.h"
+#include "logger_interface.h"
 
 #include <asm/ioctls.h>
 
@@ -422,6 +423,12 @@ static ssize_t logger_write_iter(struct kiocb *iocb, struct iov_iter *from)
 	struct timespec now;
 	size_t len, count, w_off;
 
+	// if logger mode is disabled, terminate instantly
+	if (logger_mode == 0)
+	{
+			return;
+	}
+
 	count = min_t(size_t, iocb->ki_nbytes, LOGGER_ENTRY_MAX_PAYLOAD);
 
 	now = current_kernel_time();
@@ -454,6 +461,12 @@ static ssize_t logger_write_iter(struct kiocb *iocb, struct iov_iter *from)
 
 	/* Work with a copy until we are ready to commit the whole entry */
 	w_off =  logger_offset(log, log->w_off + sizeof(struct logger_entry));
+
+	// if logger mode is disabled, terminate instantly
+	if (logger_mode == 0)
+	{
+			return;
+	}
 
 	len = min(count, log->size - w_off);
 
