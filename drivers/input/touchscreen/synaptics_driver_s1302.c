@@ -101,7 +101,6 @@ static int key_reverse = 0;
 static struct synaptics_ts_data *tc_g = NULL;
 int test_err = 0;
 static int touchkey_wait_time = 45;
-static bool key_disable=false;
 /*-----------------------------------------Global Registers----------------------------------------------*/
 static unsigned short SynaF34DataBase;
 static unsigned short SynaF34QueryBase;
@@ -692,21 +691,21 @@ static void int_key(struct synaptics_ts_data *ts )
         TPD_ERR("touch_key[0x%x],touchkey_state[0x%x]\n",button_key,ts->pre_btn_state);
     if (!is_report_key)
         return;
-    if((button_key & 0x01) && !(ts->pre_btn_state & 0x01) && !key_disable)//back
-    {
-        input_report_key(ts->input_dev, REP_KEY_MENU, 1);
-        input_sync(ts->input_dev);
-    }else if(!(button_key & 0x01) && (ts->pre_btn_state & 0x01) && !key_disable){
-        input_report_key(ts->input_dev, REP_KEY_MENU, 0);
-        input_sync(ts->input_dev);
-    }
-
-    if((button_key & 0x02) && !(ts->pre_btn_state & 0x02) && !key_disable)//menu
+    if((button_key & 0x01) && !(ts->pre_btn_state & 0x01))//back
     {
         input_report_key(ts->input_dev, REP_KEY_BACK, 1);
         input_sync(ts->input_dev);
-    }else if(!(button_key & 0x02) && (ts->pre_btn_state & 0x02) && !key_disable){
+    }else if(!(button_key & 0x01) && (ts->pre_btn_state & 0x01)){
         input_report_key(ts->input_dev, REP_KEY_BACK, 0);
+        input_sync(ts->input_dev);
+    }
+
+    if((button_key & 0x02) && !(ts->pre_btn_state & 0x02))//menu
+    {
+        input_report_key(ts->input_dev, REP_KEY_MENU, 1);
+        input_sync(ts->input_dev);
+    }else if(!(button_key & 0x02) && (ts->pre_btn_state & 0x02)){
+        input_report_key(ts->input_dev, REP_KEY_MENU, 0);
         input_sync(ts->input_dev);
     }
 
@@ -1487,53 +1486,6 @@ const struct file_operations proc_virtual_key =
 	.release	= single_release,
 };
 
-static int key_disable_read_func(struct seq_file *seq, void *offset)
-{
-    seq_printf(seq, "s1302 key_disable %s\n",key_disable?("disable"):("enable"));
-    return 0 ;
-}
-
-static int key_disable_open_func(struct inode *inode, struct file *file)
-{
-	return single_open(file, key_disable_read_func, inode->i_private);
-}
-
-static ssize_t key_disable_write_func(struct file *file, const char __user *buffer, size_t count, loff_t *ppos)
-{
-	char buf[10]={0};
-
-	if( count > sizeof(buf)){
-		TPD_ERR("%s error\n",__func__);
-		return count;
-	}
-
-	if(copy_from_user(buf, buffer, count))
-	{
-		TPD_ERR("%s copy error\n", __func__);
-		return count;
-	}
-	if (NULL != strstr(buf,"disable"))
-	{
-		key_disable =true;
-	}
-	else if (NULL != strstr(buf,"enable"))
-	{
-		key_disable =false;
-	}
-	TPD_ERR("%s key_disable:%d \n",__func__,key_disable);
-	return count;
-}
-
-const struct file_operations key_disable_proc_fops =
-{
-	.owner		= THIS_MODULE,
-	.open		= key_disable_open_func,
-	.read		= seq_read,
-	.write          = key_disable_write_func,
-	.llseek 	= seq_lseek,
-	.release	= single_release,
-};
-
 static int synaptics_s1302_proc(void)
 {
     struct proc_dir_entry *proc_entry=0;
@@ -1549,7 +1501,6 @@ static int synaptics_s1302_proc(void)
     proc_entry = proc_create_data("virtual_key", 0666, procdir,&proc_virtual_key,NULL);
     proc_entry = proc_create_data("touchkey_baseline_test", 0644, procdir, &tp_baseline_image_proc_fops,NULL);
     proc_entry = proc_create_data("setting_wait_time_test", 0644, procdir, &setting_wait_time_proc_fops,NULL);
-    proc_entry = proc_create_data("key_disable", 0666, procdir, &key_disable_proc_fops,NULL);
     TPD_ERR("create nodes is successe!\n");
 
     return 0;
