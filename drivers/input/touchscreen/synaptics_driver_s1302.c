@@ -97,7 +97,7 @@ enum oem_boot_mode{
 /*---------------------------------------------Global Variable----------------------------------------------*/
 static unsigned int tp_debug = 0;
 static int force_update = 0;
-static int key_reverse = 0;
+static int key_reverse = 1;
 static struct synaptics_ts_data *tc_g = NULL;
 int test_err = 0;
 static int touchkey_wait_time = 45;
@@ -693,19 +693,19 @@ static void int_key(struct synaptics_ts_data *ts )
         return;
     if((button_key & 0x01) && !(ts->pre_btn_state & 0x01))//back
     {
-        input_report_key(ts->input_dev, REP_KEY_BACK, 1);
+        input_report_key(ts->input_dev, REP_KEY_MENU, 1);
         input_sync(ts->input_dev);
     }else if(!(button_key & 0x01) && (ts->pre_btn_state & 0x01)){
-        input_report_key(ts->input_dev, REP_KEY_BACK, 0);
+        input_report_key(ts->input_dev, REP_KEY_MENU, 0);
         input_sync(ts->input_dev);
     }
 
     if((button_key & 0x02) && !(ts->pre_btn_state & 0x02))//menu
     {
-        input_report_key(ts->input_dev, REP_KEY_MENU, 1);
+        input_report_key(ts->input_dev, REP_KEY_BACK, 1);
         input_sync(ts->input_dev);
     }else if(!(button_key & 0x02) && (ts->pre_btn_state & 0x02)){
-        input_report_key(ts->input_dev, REP_KEY_MENU, 0);
+        input_report_key(ts->input_dev, REP_KEY_BACK, 0);
         input_sync(ts->input_dev);
     }
 
