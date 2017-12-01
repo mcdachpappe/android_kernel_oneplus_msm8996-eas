@@ -465,6 +465,7 @@ void external_battery_gauge_register(struct external_battery_gauge *batt_gauge)
 	} else {
 		external_fg = batt_gauge;
 	}
+	pr_info("qpnp-charger %s external_fg = %p\n", __func__, external_fg);
 }
 EXPORT_SYMBOL(external_battery_gauge_register);
 
@@ -4622,7 +4623,8 @@ static int fg_power_get_property(struct power_supply *psy,
 			val->strval = chip->batt_type;
 		break;
 	case POWER_SUPPLY_PROP_CAPACITY:
-		if (external_fg && external_fg->get_battery_soc)
+		if (chip->use_external_fg && external_fg
+				&& external_fg->get_battery_soc)
 			val->intval = external_fg->get_battery_soc();
 		else if(get_extern_fg_regist_done() == false)
 			val->intval = get_prop_pre_shutdown_soc();
@@ -4636,13 +4638,15 @@ static int fg_power_get_property(struct power_supply *psy,
 		val->intval = get_sram_prop_now(chip, FG_DATA_VINT_ERR);
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_NOW:
-		if (external_fg && external_fg->get_average_current)
+		if (chip->use_external_fg && external_fg
+				&& external_fg->get_average_current)
 			val->intval = external_fg->get_average_current();
 		else
 			val->intval = get_sram_prop_now(chip, FG_DATA_CURRENT);
 		break;
 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-		if (external_fg && external_fg->get_battery_mvolts)
+		if (chip->use_external_fg && external_fg
+				&& external_fg->get_battery_mvolts)
 			val->intval = external_fg->get_battery_mvolts();
 		else
 			val->intval = get_sram_prop_now(chip, FG_DATA_VOLTAGE);
@@ -4654,7 +4658,8 @@ static int fg_power_get_property(struct power_supply *psy,
 		val->intval = chip->batt_max_voltage_uv;
 		break;
 	case POWER_SUPPLY_PROP_TEMP:
-		if (external_fg && external_fg->get_average_current)
+		if (chip->use_external_fg && external_fg
+				&& external_fg->get_average_current)
 			val->intval = external_fg->get_battery_temperature();
 		else if (get_extern_fg_regist_done() == false)
 			val->intval = DEFALUT_BATT_TEMP;
@@ -4690,7 +4695,8 @@ static int fg_power_get_property(struct power_supply *psy,
 		val->intval = chip->battery_4p4v_present;
 		break;
 	case POWER_SUPPLY_PROP_BATTERY_HEALTH:
-		if (external_fg && external_fg->get_batt_health)
+		if (chip->use_external_fg && external_fg
+				&& external_fg->get_batt_health)
 			val->intval = external_fg->get_batt_health();
 		else
 			val->intval = -1;
@@ -4848,11 +4854,11 @@ static int fg_power_set_property(struct power_supply *psy,
 		oem_update_cc_cv_setpoint(chip,val->intval);
 		break;
 	case POWER_SUPPLY_PROP_SET_ALLOW_READ_EXTERN_FG_IIC:
-		if (external_fg && external_fg->set_alow_reading)
+		if (chip->use_external_fg && external_fg && external_fg->set_alow_reading)
 			external_fg->set_alow_reading(val->intval);
 		break;
 	case POWER_SUPPLY_PROP_UPDATE_LCD_IS_OFF:
-		if (external_fg && external_fg->set_lcd_off_status)
+		if (chip->use_external_fg && external_fg && external_fg->set_lcd_off_status)
 			external_fg->set_lcd_off_status(val->intval);
 		break;
 	case POWER_SUPPLY_PROP_BATTERY_4P4V_PRESENT:
@@ -7273,6 +7279,8 @@ static int fg_of_init(struct fg_chip *chip)
 	} else {
 		rc = 0;
 	}
+
+	chip->use_external_fg = of_property_read_bool(node, "oem,use_external_fg");
 
 	chip->bad_batt_detection_en = of_property_read_bool(node,
 				"qcom,bad-battery-detection-enable");
