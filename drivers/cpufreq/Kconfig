@@ -159,6 +159,12 @@ config CPU_FREQ_DEFAULT_GOV_NIGHTMARE
 	  A PegasusQ modified, less aggressive and more stable. A good compromise between performance and battery. 
 	  In addition to the SoD is a prevention because it usually does not hotplug.
 
+config CPU_FREQ_DEFAULT_GOV_SMARTMAX_EPS
+	bool "smartmax_eps"
+	select CPU_FREQ_GOV_SMARTMAX_EPS
+	help
+	  Use the CPUFreq governor 'smartmax eps' as default
+
 endchoice
 
 config CPU_FREQ_GOV_PERFORMANCE
@@ -236,6 +242,12 @@ config CPU_FREQ_GOV_TRIPNDROID
 	  Custom cpu governor designed specificly for multi cpu mobile devices.
 	  Aiming at a balance between performance and battery lifetime, but it
 	  hangs a little bit more towards performance at low latencys.
+
+config CPU_FREQ_GOV_SMARTMAX_EPS
+	tristate "'smartmax EPS' cpufreq policy governor"
+	select CPU_FREQ_TABLE
+	help
+	  'smartmax EPS' is the extreme powersaving version of smartmax
 
 config CPU_FREQ_GOV_CONSERVATIVE
 	tristate "'conservative' cpufreq governor"
