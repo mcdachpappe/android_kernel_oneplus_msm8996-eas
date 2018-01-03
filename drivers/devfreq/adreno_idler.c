@@ -38,17 +38,19 @@
 #define ADRENO_IDLER_MINOR_VERSION 1
 
 /* stats.busy_time threshold for determining if the given workload is idle.
-   Any workload higher than this will be treated as non-idle workload,
-   meaning the higher it gets, the slower & low-power it would get. */
-static unsigned long idleworkload = 5000;
+   Any workload higher than this will be treated as a non-idle workload.
+   Adreno idler will more actively try to ramp down the frequency
+   if this is set to a higher value. */
+static unsigned long idleworkload = 6000;
 module_param_named(adreno_idler_idleworkload, idleworkload, ulong, 0664);
 
-/* Numbers to wait before entering idle.
-   The idlewait'th events before must be all idle before Adreno idler ramps
-   down the frequency.
-   This implementation is to prevent micro-lags on scrolling or playing games,
-   meaning the lower it gets, the slower & low-power it would get. */
-static unsigned int idlewait = 20;
+/* Number of events to wait before ramping down the frequency.
+   The idlewait'th events before current one must be all idle before
+   Adreno idler ramps down the frequency.
+   This implementation is to prevent micro-lags on scrolling or playing games.
+   Adreno idler will more actively try to ramp down the frequency
+   if this is set to a lower value. */
+static unsigned int idlewait = 26;
 module_param_named(adreno_idler_idlewait, idlewait, uint, 0664);
 
 /* Taken from ondemand */
