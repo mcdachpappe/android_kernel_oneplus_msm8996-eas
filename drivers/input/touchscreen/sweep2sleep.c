@@ -20,7 +20,6 @@ MODULE_LICENSE("GPL");
 #define S2S_Y_LIMIT             S2S_Y_MAX-180
 #define SWEEP_RIGHT		0x01
 #define SWEEP_LEFT		0x02
-#define VIB_STRENGTH		20
 
 // 1=sweep right, 2=sweep left, 3=both
 static int s2s_switch = 2;
