@@ -67,6 +67,7 @@ arch/*/include/generated
 
 # stgit generated dirs
 patches-*
+out
 
 # quilt's files
 patches
