@@ -97,3 +97,7 @@ x509.genkey
 
 # Kconfig presets
 all.config
+
+upload/
+
+build/kernel/Image\.gz-dtb
