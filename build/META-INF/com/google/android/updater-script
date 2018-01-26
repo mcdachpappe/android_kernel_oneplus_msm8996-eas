@@ -1,0 +1,22 @@
+ui_print(" ");
+ui_print("~*~*~ HolyDragon Kernel for OP3/3T ~*~*~");
+ui_print(" ");
+ui_print("Extracting installer..");
+package_extract_dir("kernel", "/tmp");
+set_perm(0, 0, 0777, "/tmp/install.sh");
+set_perm(0, 0, 0777, "/tmp/mkbootimg");
+set_perm(0, 0, 0777, "/tmp/unpackbootimg");
+set_progress(0.6);
+ui_print("Mounting system");
+unmount("/system");
+mount("ext4", "EMMC", "/dev/block/bootdevice/by-name/system", "/system");
+ui_print("Inserting extra files..");
+package_extract_dir("system", "/system");
+set_perm(0, 0, 0644, "/system/vendor/etc/fstab.qcom");
+set_perm_recursive(0, 0, 0755, 0644, "/system/lib/modules");
+ui_print("Installing kernel..");
+run_program("/tmp/install.sh");
+unmount("/system");
+ui_print("~Install Successful~");
+set_progress(1.0);
+
