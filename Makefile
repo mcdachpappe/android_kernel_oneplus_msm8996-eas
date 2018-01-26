@@ -383,7 +383,7 @@ include $(srctree)/scripts/Kbuild.include
 # Make variables (CC, etc...)
 AS		= $(CROSS_COMPILE)as
 LD		= $(CROSS_COMPILE)ld --strip-debug
-REAL_CC		= $(CROSS_COMPILE)gcc -g0
+CC		= $(CROSS_COMPILE)gcc -g0
 CPP		= $(CC) -E -fdeclone-ctor-dtor -flto -fuse-linker-plugin
 AR		= $(CROSS_COMPILE)ar
 NM		= $(CROSS_COMPILE)nm
