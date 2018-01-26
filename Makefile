@@ -1,8 +1,8 @@
 VERSION = 3
 PATCHLEVEL = 18
 SUBLEVEL = 92
-EXTRAVERSION =
-NAME = Diseased Newt
+EXTRAVERSION = -HolyDragon-v0.0.1-Beta
+NAME = Apalala
 
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
