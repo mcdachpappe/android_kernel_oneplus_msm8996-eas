@@ -1,7 +1,7 @@
 VERSION = 3
 PATCHLEVEL = 18
 SUBLEVEL = 92
-EXTRAVERSION = -HolyDragon-v0.0.1-Beta
+EXTRAVERSION = -HolyDragon-v0.0.3-Beta
 NAME = Apalala
 
 # *DOCUMENTATION*
