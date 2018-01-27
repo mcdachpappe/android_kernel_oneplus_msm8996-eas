@@ -26,13 +26,13 @@
 	dc=HDO_defconfig
 
 # Source Path to kernel tree
-	k=/home/holyangel/android/omni/kernel/oneplus/msm8996
+	k=/home/holyangel/android/msm8996
 
 # Source Path to clean(empty) out folder
 	co=$k/out
 
 # Compile Path to out 
-	o="O=/home/holyangel/android/omni/kernel/oneplus/msm8996/out"
+	o="O=/home/holyangel/android/msm8996/out"
 
 # Source Path to compiled Image.gz-dtb
 	i=$k/out/arch/arm64/boot/Image.gz-dtb
