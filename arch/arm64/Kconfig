@@ -879,7 +879,7 @@ menu "ARMv8.1 architectural features"
 
 config ARM64_PAN
 	bool "Enable support for Privileged Access Never (PAN)"
-	default y
+	default n
 	help
 	 Privileged Access Never (PAN; part of the ARMv8.1 Extensions)
 	 prevents the kernel or hypervisor from accessing user-space (EL0)
