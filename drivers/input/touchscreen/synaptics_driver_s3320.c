@@ -1223,10 +1223,10 @@ static void gesture_judge(struct synaptics_ts_data *ts)
 			keyCode = KEY_DOUBLE_TAP;
 			break;
 		case UpVee:
-			keyCode = KEY_GESTURE_V;
+			keyCode = KEY_GESTURE_DOWN_ARROW;
 			break;
 		case DownVee:
-			keyCode = KEY_GESTURE_V;
+			keyCode = KEY_GESTURE_UP_ARROW;
 			break;
 		case LeftVee:
 			keyCode = KEY_GESTURE_RIGHT_V;
