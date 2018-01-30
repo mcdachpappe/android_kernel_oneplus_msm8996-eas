@@ -1253,8 +1253,8 @@ static void gesture_judge(struct synaptics_ts_data *ts)
 			break;
 	}
 #endif
-
-	TPD_ERR("detect %s gesture\n", gesture == DouTap ? "(double tap)" :
+	TPD_ERR("detect %s gesture\n",
+			gesture == DouTap ? "(double tap)" :
 			gesture == UpVee ? "(V)" :
 			gesture == DownVee ? "(^)" :
 			gesture == LeftVee ? "(>)" :
