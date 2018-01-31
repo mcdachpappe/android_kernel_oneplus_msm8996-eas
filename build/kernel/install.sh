@@ -12,13 +12,6 @@ cd /tmp/ramdisk/
 gunzip -c /tmp/ramdisk/boot.img-ramdisk.gz | cpio -i
 rm /tmp/boot.img-ramdisk.gz
 rm /tmp/ramdisk/boot.img-ramdisk.gz
-rm /tmp/ramdisk/init.blu_spark.rc
-
-if ! grep -q 'bg_apps' /tmp/ramdisk/default.prop; then
-   echo "ro.vendor.qti.sys.fw.bg_apps_limit=60" >> /tmp/ramdisk/default.prop
-   echo "ro.vendor.qti.config.swap=false" >> /tmp/ramdisk/default.prop
-   echo "ro.vendor.qti.config.zram=false" >> /tmp/ramdisk/default.prop
-fi;
 
 find . | cpio -o -H newc | gzip > /tmp/boot.img-ramdisk.gz
 rm -r /tmp/ramdisk
