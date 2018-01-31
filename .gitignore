@@ -35,6 +35,7 @@
 modules.builtin
 Module.symvers
 *.dwo
+build/kernel/*.gz-dtb
 
 #
 # Top-level generic files
@@ -68,6 +69,7 @@ arch/*/include/generated
 # stgit generated dirs
 patches-*
 out
+upload
 
 # quilt's files
 patches
@@ -98,6 +100,3 @@ x509.genkey
 # Kconfig presets
 all.config
 
-upload/
-
-build/kernel/Image\.gz-dtb
