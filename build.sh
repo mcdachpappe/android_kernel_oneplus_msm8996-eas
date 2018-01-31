@@ -51,7 +51,7 @@
 
 # Kernel zip Name
 ##############################
-	kn=HDK_OP3_AK2_OMNI_V0.0.3.3-Beta.zip
+	kn=HDK_OP3_AK2_OMNI_V0.0.3.4-Beta.zip
 
 ############################################################
 # Cleanup
