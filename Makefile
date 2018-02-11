@@ -252,7 +252,7 @@ ARCH		?= $(SUBARCH)
 CROSS_COMPILE	?= $(CONFIG_CROSS_COMPILE:"%"=%)
 ARCH		:= arm64
 SUBARCH		:= arm64
-CROSS_COMPILE	:= /home/holyangel/android/aarch64-cortex_a57-linux-gnu-lin5.4-17.05/bin/aarch64-cortex_a57-linux-gnu-
+CROSS_COMPILE	:= /home/holyangel/android/aarch64-cortex_a57-linux-gnu-lin5.5-17.10/bin/aarch64-cortex_a57-linux-gnueabi-
 
 # Architecture as present in compile.h
 UTS_MACHINE 	:= $(ARCH)
