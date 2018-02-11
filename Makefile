@@ -305,12 +305,11 @@ GRAPHITE	:= -fgraphite -fgraphite-identity -floop-nest-optimize -ftree-loop-dist
 
 # Extra GCC Optimizations	  
 EXTRA_OPTS	:= -falign-functions=1 -falign-loops=1 -falign-jumps=1 -falign-labels=1 \
-				-fira-hoist-pressure -fira-loop-pressure \
-				-fno-gcse \
-                -fsched-pressure -fsched-spec-load \
-                -fno-prefetch-loop-arrays -fpredictive-commoning \
-                -fvect-cost-model=dynamic -fsimd-cost-model=dynamic \
-                -ftree-partial-pre
+		-fira-hoist-pressure -fira-loop-pressure \
+		-fno-gcse -fsched-pressure -fsched-spec-load \
+		-fno-prefetch-loop-arrays -fpredictive-commoning \
+		-fvect-cost-model=dynamic -fsimd-cost-model=dynamic \
+		-ftree-partial-pre
 
 # Arm Architecture Specific
 # fall back to -march=armv8-a in case the compiler isn't compatible
@@ -321,8 +320,7 @@ ARM_ARCH_OPT := $(call cc-option,-march=armv8.1-a+crc+lse,) -mcpu=cortex-a57+crc
 # Optional
 GEN_OPT_FLAGS := \
  -DNDEBUG -pipe \
- -fomit-frame-pointer -fivopts \
- -fmodulo-sched -fmodulo-sched-allow-regmoves
+ -fomit-frame-pointer -fivopts 
 
 HOSTCC       = gcc
 HOSTCXX      = g++
@@ -331,7 +329,7 @@ HOSTCXXFLAGS = -O2 $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS) $(GRAPHITE)
 
 ifeq ($(shell $(HOSTCC) -v 2>&1 | grep -c "clang version"), 1)
 HOSTCFLAGS  += -Wno-unused-value -Wno-unused-parameter \
-		-Wno-missing-field-initializers -fno-delete-null-pointer-checks
+		-Wno-missing-field-initializers
 endif
 
 # Decide whether to build built-in, modular, or both.
@@ -761,7 +759,7 @@ endif
 KBUILD_AFLAGS	+= -Wa,-g0
 endif
 ifdef CONFIG_DEBUG_INFO_DWARF4
-KBUILD_CFLAGS	+= $(call cc-option, -g0,)
+KBUILD_CFLAGS  += $(call cc-option, -gdwarf-4,) 
 endif
 
 ifdef CONFIG_DEBUG_INFO_REDUCED
@@ -1549,11 +1547,11 @@ image_name:
 # Clear a bunch of variables before executing the submake
 tools/: FORCE
 	$(Q)mkdir -p $(objtree)/tools
-	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS="$(filter --j% -j,$(MAKEFLAGS))" O=$(objtree) subdir=tools -C $(src)/tools/
+	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS="$(filter --j% -j,$(MAKEFLAGS))" O=$(shell cd $(objtree) && /bin/pwd) subdir=tools -C $(src)/tools/
 
 tools/%: FORCE
 	$(Q)mkdir -p $(objtree)/tools
-	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS="$(filter --j% -j,$(MAKEFLAGS))" O=$(objtree) subdir=tools -C $(src)/tools/ $*
+	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS="$(filter --j% -j,$(MAKEFLAGS))" O=$(shell cd $(objtree) && /bin/pwd) subdir=tools -C $(src)/tools/ $*
 
 # Single targets
 # ---------------------------------------------------------------------------
