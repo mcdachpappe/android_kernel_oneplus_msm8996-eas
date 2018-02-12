@@ -314,18 +314,47 @@ EXTRA_OPTS	:= -falign-functions=1 -falign-loops=1 -falign-jumps=1 -falign-labels
 # Arm Architecture Specific
 # fall back to -march=armv8-a in case the compiler isn't compatible
 # with -mcpu and -mtune
-ARM_ARCH_OPT := $(call cc-option,-march=armv8.1-a+crc+lse,) -mcpu=cortex-a57+crc+crypto+fp+simd \
-				--param l1-cache-line-size=64 --param l1-cache-size=32 --param l2-cache-size=512 \
+ARM_ARCH_OPT := $(call cc-option,-march=armv8.1-a+crc+lse+crypto+fp+simd,) -mcpu=cortex-a57+crc+crypto+fp+simd \
+				--param l1-cache-line-size=64 --param l1-cache-size=32 --param l2-cache-size=512 
 
 # Optional
 GEN_OPT_FLAGS := \
  -DNDEBUG -pipe \
  -fomit-frame-pointer -fivopts 
 
+LTO_FLAGS	:= -flto -mllvm -fuse-ld=qcld
+
+LLVM_FLAGS	:= -mllvm -arm-expand-memcpy-runtime=16 \
+		-mllvm -arm-opt-memcpy \
+		-mllvm -disable-thumb-scale-addressing=true \
+		-mllvm -enable-round-robin-RA \
+		-mllvm -enable-select-to-intrinsics \
+		-mllvm -favor-r0-7 -falign-inner-loops -fparallel -foptimize-sibling-calls -funit-at-a-time
+
+OPT_FLAGS	:= -O3 -march=armv8-a+crc+lse+crypto+fp+simd -mcpu=kryo+crc+crypto+fp+simd \
+		-fvectorize -fslp-vectorize -fno-prefetch-loop-arrays -fmerge-functions $(POLLY_FLAGS)
+
+POLLY_FLAGS	:= -mllvm -polly \
+		   -mllvm -polly-parallel \
+		   -mllvm -polly-run-dce \
+		   -mllvm -polly-run-inliner \
+		   -mllvm -polly-opt-fusion=max \
+		   -mllvm -polly-ast-use-context \
+		   -mllvm -polly-detect-keep-going \
+		   -mllvm -polly-vectorizer=stripmine
+
 HOSTCC       = gcc
 HOSTCXX      = g++
 HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89 $(GEN_OPT_FLAGS) $(EXTRA_OPTS) $(GRAPHITE)
 HOSTCXXFLAGS = -O2 $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS) $(GRAPHITE) 
+
+LTO_TRIPLE	?= /home/holyangel/android/sdclang/bin/lto-	
+LLVM_TRIPLE	?= /home/holyangel/android/sdclang/bin/llvm-
+CLANG_TRIPLE	?= /home/holyangel/android/sdclang/bin/clang
+CLANG_TARGET	:= -target aarch64-linux-android -march=armv8-a+crc+lse+crypto+fp+simd -mcpu=kryo+crc+crypto+fp+simd 
+GCC_TOOLCHAIN	:= $(realpath $(dir $(shell which $(LD)))/..)
+CLANG_IA_FLAG	= -no-integrated-as
+CLANG_FLAGS	:= $(CLANG_TRIPLE) $(CLANG_TARGET) $(CLANG_IA_FLAG) $(OPT_FLAGS)
 
 ifeq ($(shell $(HOSTCC) -v 2>&1 | grep -c "clang version"), 1)
 HOSTCFLAGS  += -Wno-unused-value -Wno-unused-parameter \
@@ -378,20 +407,11 @@ MAKEFLAGS += --include-dir=$(srctree)
 $(srctree)/scripts/Kbuild.include: ;
 include $(srctree)/scripts/Kbuild.include
 
-POLLY_FLAGS	:= -mllvm -polly \
-		   -mllvm -polly-parallel \
-		   -mllvm -polly-run-dce \
-		   -mllvm -polly-run-inliner \
-		   -mllvm -polly-opt-fusion=max \
-		   -mllvm -polly-ast-use-context \
-		   -mllvm -polly-detect-keep-going \
-		   -mllvm -polly-vectorizer=stripmine
-
 # Make variables (CC, etc...)
-AS		= $(LLVM_TRIPLE)as -flto $(OPT_FLAGS) -mllvm -fuse-ld=qcld
+AS		= $(LLVM_TRIPLE)as $(LTO_FLAGS) $(OPT_FLAGS) $(LLVM_FLAGS) 
 LD		= $(CROSS_COMPILE)ld --strip-debug
 CC		= $(CROSS_COMPILE)gcc -g0
-CPP		= $(CLANG_FLAGS) -E -flto
+CPP		= $(CLANG_FLAGS) -E -flto $(LLVM_FLAGS)
 AR		= $(LLVM_TRIPLE)ar
 NM		= $(LLVM_TRIPLE)nm
 STRIP		= $(LLVM_TRIPLE)strip
@@ -414,17 +434,6 @@ CFLAGS_KERNEL	= $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS) $(GRAPHITE)
 AFLAGS_KERNEL	= $(CFLAGS_KERNEL) -flto -fuse-linker-plugin -r
 CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage -fno-tree-loop-im
 CFLAGS_KCOV	= -fsanitize-coverage=trace-pc
-
-OPT_FLAGS	:= -O3 -march=armv8.1-a+crc+lse -mcpu=kryo+crc+crypto+fp+simd \
-		-fvectorize -fslp-vectorize $(POLLY_FLAGS)
-
-LTO_TRIPLE	?= /home/holyangel/android/sdclang/bin/lto-	
-LLVM_TRIPLE	?= /home/holyangel/android/sdclang/bin/llvm-
-CLANG_TRIPLE	?= /home/holyangel/android/sdclang/bin/clang
-CLANG_TARGET	:= -target aarch64-linux-android -march=armv8.1-a+crc+lse -mcpu=kryo+crc+crypto+fp+simd 
-GCC_TOOLCHAIN	:= $(realpath $(dir $(shell which $(LD)))/..)
-CLANG_IA_FLAG	= -no-integrated-as
-CLANG_FLAGS	:= $(CLANG_TRIPLE) $(CLANG_TARGET) $(CLANG_IA_FLAG) $(OPT_FLAGS)
 
 # Use USERINCLUDE when you must reference the UAPI directories only.
 USERINCLUDE    := \
@@ -450,7 +459,7 @@ KBUILD_CFLAGS   := -Wstrict-prototypes -Wno-trigraphs \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security -Wno-bool-compare \
 		   -std=gnu89 \
-		   -mcpu=cortex-a57+crc+crypto+fp+simd -mtune=cortex-a57 $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS) $(GRAPHITE) \
+		   $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS) $(GRAPHITE) \
 
 KBUILD_AFLAGS_KERNEL := $(CFLAGS_KERNEL) -flto -fuse-linker-plugin -r
 KBUILD_CFLAGS_KERNEL := $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS) $(GRAPHITE)
