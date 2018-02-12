@@ -378,6 +378,15 @@ MAKEFLAGS += --include-dir=$(srctree)
 $(srctree)/scripts/Kbuild.include: ;
 include $(srctree)/scripts/Kbuild.include
 
+POLLY_FLAGS	:= -mllvm -polly \
+		   -mllvm -polly-parallel \
+		   -mllvm -polly-run-dce \
+		   -mllvm -polly-run-inliner \
+		   -mllvm -polly-opt-fusion=max \
+		   -mllvm -polly-ast-use-context \
+		   -mllvm -polly-detect-keep-going \
+		   -mllvm -polly-vectorizer=stripmine
+
 # Make variables (CC, etc...)
 AS		= $(CROSS_COMPILE)as
 LD		= $(CROSS_COMPILE)ld --strip-debug
@@ -406,6 +415,16 @@ AFLAGS_KERNEL	= $(CFLAGS_KERNEL) -flto -fuse-linker-plugin -r
 CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage -fno-tree-loop-im
 CFLAGS_KCOV	= -fsanitize-coverage=trace-pc
 
+OPT_FLAGS	:= -O3 -march=armv8.1-a+crc+lse -mcpu=kryo+crc+crypto+fp+simd \
+		-fvectorize -fslp-vectorize $(POLLY_FLAGS)
+
+LTO_TRIPLE	?= /home/holyangel/android/sdclang/bin/lto-	
+LLVM_TRIPLE	?= /home/holyangel/android/sdclang/bin/llvm-
+CLANG_TRIPLE	?= /home/holyangel/android/sdclang/bin/clang
+CLANG_TARGET	:= -target aarch64-linux-android -march=armv8.1-a+crc+lse -mcpu=kryo+crc+crypto+fp+simd 
+GCC_TOOLCHAIN	:= $(realpath $(dir $(shell which $(LD)))/..)
+CLANG_IA_FLAG	= -no-integrated-as
+CLANG_FLAGS	:= $(CLANG_TRIPLE) $(CLANG_TARGET) $(CLANG_IA_FLAG) $(OPT_FLAGS)
 
 # Use USERINCLUDE when you must reference the UAPI directories only.
 USERINCLUDE    := \
