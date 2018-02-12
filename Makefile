@@ -388,15 +388,15 @@ POLLY_FLAGS	:= -mllvm -polly \
 		   -mllvm -polly-vectorizer=stripmine
 
 # Make variables (CC, etc...)
-AS		= $(CROSS_COMPILE)as
+AS		= $(LLVM_TRIPLE)as -flto $(OPT_FLAGS) -mllvm -fuse-ld=qcld
 LD		= $(CROSS_COMPILE)ld --strip-debug
 CC		= $(CROSS_COMPILE)gcc -g0
-CPP		= $(CC) -E -fdeclone-ctor-dtor -flto -fuse-linker-plugin
-AR		= $(CROSS_COMPILE)ar
-NM		= $(CROSS_COMPILE)nm
-STRIP		= $(CROSS_COMPILE)strip
+CPP		= $(CLANG_FLAGS) -E -flto
+AR		= $(LLVM_TRIPLE)ar
+NM		= $(LLVM_TRIPLE)nm
+STRIP		= $(LLVM_TRIPLE)strip
 OBJCOPY		= $(CROSS_COMPILE)objcopy
-OBJDUMP		= $(CROSS_COMPILE)objdump
+OBJDUMP		= $(LLVM_TRIPLE)objdump
 AWK		= awk
 GENKSYMS	= scripts/genksyms/genksyms
 INSTALLKERNEL  := installkernel
@@ -450,7 +450,7 @@ KBUILD_CFLAGS   := -Wstrict-prototypes -Wno-trigraphs \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security -Wno-bool-compare \
 		   -std=gnu89 \
-		   -mcpu=cortex-a57 -mtune=cortex-a57 $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS) $(GRAPHITE) \
+		   -mcpu=cortex-a57+crc+crypto+fp+simd -mtune=cortex-a57 $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS) $(GRAPHITE) \
 
 KBUILD_AFLAGS_KERNEL := $(CFLAGS_KERNEL) -flto -fuse-linker-plugin -r
 KBUILD_CFLAGS_KERNEL := $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS) $(GRAPHITE)
@@ -672,9 +672,10 @@ KBUILD_CFLAGS	+= $(call cc-option,-fno-PIE)
 KBUILD_AFLAGS	+= $(call cc-option,-fno-PIE)
 
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
-KBUILD_CFLAGS	+= -Os
+KBUILD_CFLAGS	+= $(call cc-option,-Oz,-Os)
+KBUILD_CFLAGS	+= $(call cc-disable-warning,maybe-uninitialized,)
 else
-KBUILD_CFLAGS	+= -O2 $(call cc-disable-warning,maybe-uninitialized,) $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS) $(GRAPHITE)
+KBUILD_CFLAGS	+= -O3 $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS) $(GRAPHITE)
 endif
 
 # Tell gcc to never replace conditional load with a non-conditional one
