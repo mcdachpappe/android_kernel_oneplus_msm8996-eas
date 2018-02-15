@@ -345,8 +345,8 @@ POLLY_FLAGS	:= -mllvm -polly \
 
 HOSTCC       = gcc
 HOSTCXX      = g++
-HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89 $(GEN_OPT_FLAGS) $(EXTRA_OPTS) $(GRAPHITE)
-HOSTCXXFLAGS = -O2 $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS) $(GRAPHITE) 
+HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O3 -fomit-frame-pointer -std=gnu89 $(GEN_OPT_FLAGS) $(EXTRA_OPTS) $(GRAPHITE)
+HOSTCXXFLAGS = -O3 $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS) $(GRAPHITE) 
 
 LTO_TRIPLE	?= /home/holyangel/android/sdclang/bin/lto-	
 LLVM_TRIPLE	?= /home/holyangel/android/sdclang/bin/llvm-
