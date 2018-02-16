@@ -1,7 +1,7 @@
 VERSION = 3
 PATCHLEVEL = 18
 SUBLEVEL = 92
-EXTRAVERSION = -HolyDragon-v0.0.4.3
+EXTRAVERSION = -HolyDragon-v0.0.4.5
 NAME = Apalala
 
 # *DOCUMENTATION*
@@ -306,7 +306,7 @@ GRAPHITE	:= -fgraphite -fgraphite-identity -floop-nest-optimize -ftree-loop-dist
 # Extra GCC Optimizations	  
 EXTRA_OPTS	:= -falign-functions=1 -falign-loops=1 -falign-jumps=1 -falign-labels=1 \
 		-fira-hoist-pressure -fira-loop-pressure \
-		-fno-gcse -fsched-pressure -fsched-spec-load \
+		-fsched-pressure -fsched-spec-load \
 		-fno-prefetch-loop-arrays -fpredictive-commoning \
 		-fvect-cost-model=dynamic -fsimd-cost-model=dynamic \
 		-ftree-partial-pre
@@ -324,24 +324,22 @@ GEN_OPT_FLAGS := \
 
 LTO_FLAGS	:= -flto -mllvm -fuse-ld=qcld
 
-LLVM_FLAGS	:= -mllvm -arm-expand-memcpy-runtime=16 \
-		-mllvm -arm-opt-memcpy \
+LLVM_FLAGS	:= -fvectorize-loops -floop-pragma \
 		-mllvm -disable-thumb-scale-addressing=true \
 		-mllvm -enable-round-robin-RA \
 		-mllvm -enable-select-to-intrinsics \
-		-mllvm -favor-r0-7 -falign-inner-loops -fparallel -foptimize-sibling-calls -funit-at-a-time
+		-mllvm -favor-r0-7 -falign-inner-loops -foptimize-sibling-calls -funit-at-a-time 
 
-OPT_FLAGS	:= -O3 -march=armv8-a+crc+lse+crypto+fp+simd -mcpu=kryo+crc+crypto+fp+simd \
-		-fvectorize -fslp-vectorize -fno-prefetch-loop-arrays -fmerge-functions $(POLLY_FLAGS)
+OPT_FLAGS	:= -O3 -fvectorize -fslp-vectorize $(POLLY_FLAGS) $(LLVM_FLAGS)
 
 POLLY_FLAGS	:= -mllvm -polly \
-		   -mllvm -polly-parallel \
+		   -mllvm -polly-parallel -lgomp \
 		   -mllvm -polly-run-dce \
 		   -mllvm -polly-run-inliner \
 		   -mllvm -polly-opt-fusion=max \
 		   -mllvm -polly-ast-use-context \
 		   -mllvm -polly-detect-keep-going \
-		   -mllvm -polly-vectorizer=stripmine
+		   -mllvm -polly-vectorizer=stripmine \
 
 HOSTCC       = gcc
 HOSTCXX      = g++
@@ -351,10 +349,11 @@ HOSTCXXFLAGS = -O3 $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS) $(GRAPHITE)
 LTO_TRIPLE	?= /home/holyangel/android/sdclang/bin/lto-	
 LLVM_TRIPLE	?= /home/holyangel/android/sdclang/bin/llvm-
 CLANG_TRIPLE	?= /home/holyangel/android/sdclang/bin/clang
-CLANG_TARGET	:= -target aarch64-linux-android -march=armv8-a+crc+lse+crypto+fp+simd -mcpu=kryo+crc+crypto+fp+simd 
-GCC_TOOLCHAIN	:= $(realpath $(dir $(shell which $(LD)))/..)
+CLANG_TARGET	:= -target aarch64-cortex_a57-linux-gnueabi- -march=armv8-a+crc+lse+crypto+fp+simd -mcpu=kryo+crc+crypto+fp+simd 
+GCC_TOOLCHAIN	:= /home/holyangel/android/aarch64-cortex_a57-linux-gnu-lin5.5-17.10/bin/
+CLANG_GCC_TC	:= -gcc-toolchain $(GCC_TOOLCHAIN)
 CLANG_IA_FLAG	= -no-integrated-as
-CLANG_FLAGS	:= $(CLANG_TRIPLE) $(CLANG_TARGET) $(CLANG_IA_FLAG) $(OPT_FLAGS)
+CLANG_FLAGS	:= $(CLANG_TRIPLE) $(CLANG_TARGET) $(CLANG_GCC_TC) $(CLANG_IA_FLAG) $(OPT_FLAGS)
 
 ifeq ($(shell $(HOSTCC) -v 2>&1 | grep -c "clang version"), 1)
 HOSTCFLAGS  += -Wno-unused-value -Wno-unused-parameter \
@@ -408,15 +407,15 @@ $(srctree)/scripts/Kbuild.include: ;
 include $(srctree)/scripts/Kbuild.include
 
 # Make variables (CC, etc...)
-AS		= $(LLVM_TRIPLE)as $(LTO_FLAGS) $(OPT_FLAGS) $(LLVM_FLAGS) 
+AS		= $(LLVM_TRIPLE)as $(LTO_FLAGS) $(CLANG_FLAGS) 
 LD		= $(CROSS_COMPILE)ld --strip-debug
 CC		= $(CROSS_COMPILE)gcc -g0
-CPP		= $(CLANG_FLAGS) -E -flto $(LLVM_FLAGS)
+CPP		= $(CLANG_FLAGS) -E -flto
 AR		= $(LLVM_TRIPLE)ar
 NM		= $(LLVM_TRIPLE)nm
 STRIP		= $(LLVM_TRIPLE)strip
 OBJCOPY		= $(CROSS_COMPILE)objcopy
-OBJDUMP		= $(LLVM_TRIPLE)objdump
+OBJDUMP		= $(CROSS_COMPILE)objdump
 AWK		= awk
 GENKSYMS	= scripts/genksyms/genksyms
 INSTALLKERNEL  := installkernel
