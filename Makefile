@@ -1,7 +1,7 @@
 VERSION = 3
 PATCHLEVEL = 18
 SUBLEVEL = 92
-EXTRAVERSION = -HolyDragon-v0.0.4.5
+EXTRAVERSION = -HolyDragon-v0.0.4.6
 NAME = Apalala
 
 # *DOCUMENTATION*
@@ -250,9 +250,10 @@ SUBARCH := $(shell uname -m | sed -e s/i.86/x86/ -e s/x86_64/x86/ \
 # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
 ARCH		?= $(SUBARCH)
 CROSS_COMPILE	?= $(CONFIG_CROSS_COMPILE:"%"=%)
+HDK_TC		:= /home/holyangel/android/sdclang/bin/
 ARCH		:= arm64
 SUBARCH		:= arm64
-CROSS_COMPILE	:= /home/holyangel/android/aarch64-cortex_a57-linux-gnu-lin5.5-17.10/bin/aarch64-cortex_a57-linux-gnueabi-
+CROSS_COMPILE	:= $(HDK_TC)aarch64-cortex_a57-linux-gnueabi-
 
 # Architecture as present in compile.h
 UTS_MACHINE 	:= $(ARCH)
@@ -304,12 +305,13 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 GRAPHITE	:= -fgraphite -fgraphite-identity -floop-nest-optimize -ftree-loop-distribution -ftree-loop-distribute-patterns
 
 # Extra GCC Optimizations	  
-EXTRA_OPTS	:= -falign-functions=1 -falign-loops=1 -falign-jumps=1 -falign-labels=1 \
+EXTRA_OPTS	:= -ftree-loop-vectorize -ftree-loop-distribution \
+		-ftree-loop-distribute-patterns -ftree-slp-vectorize \
 		-fira-hoist-pressure -fira-loop-pressure \
 		-fsched-pressure -fsched-spec-load \
 		-fno-prefetch-loop-arrays -fpredictive-commoning \
 		-fvect-cost-model=dynamic -fsimd-cost-model=dynamic \
-		-ftree-partial-pre
+		-ftree-partial-pre -fno-gcse
 
 # Arm Architecture Specific
 # fall back to -march=armv8-a in case the compiler isn't compatible
@@ -325,10 +327,10 @@ GEN_OPT_FLAGS := \
 LTO_FLAGS	:= -flto -mllvm -fuse-ld=qcld
 
 LLVM_FLAGS	:= -fvectorize-loops -floop-pragma \
+		-foptimize-sibling-calls -funit-at-a-time \
 		-mllvm -disable-thumb-scale-addressing=true \
 		-mllvm -enable-round-robin-RA \
-		-mllvm -enable-select-to-intrinsics \
-		-mllvm -favor-r0-7 -falign-inner-loops -foptimize-sibling-calls -funit-at-a-time 
+		-mllvm -enable-select-to-intrinsics 
 
 OPT_FLAGS	:= -O3 -fvectorize -fslp-vectorize $(POLLY_FLAGS) $(LLVM_FLAGS)
 
@@ -343,14 +345,14 @@ POLLY_FLAGS	:= -mllvm -polly \
 
 HOSTCC       = gcc
 HOSTCXX      = g++
-HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O3 -fomit-frame-pointer -std=gnu89 $(GEN_OPT_FLAGS) $(EXTRA_OPTS) $(GRAPHITE)
-HOSTCXXFLAGS = -O3 $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS) $(GRAPHITE) 
+HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89 $(GEN_OPT_FLAGS) $(EXTRA_OPTS) $(GRAPHITE)
+HOSTCXXFLAGS = -O2 $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS) $(GRAPHITE) 
 
-LTO_TRIPLE	?= /home/holyangel/android/sdclang/bin/lto-	
-LLVM_TRIPLE	?= /home/holyangel/android/sdclang/bin/llvm-
-CLANG_TRIPLE	?= /home/holyangel/android/sdclang/bin/clang
+LTO_TRIPLE	?= $(HDK_TC)lto-	
+LLVM_TRIPLE	?= $(HDK_TC)llvm-
+CLANG_TRIPLE	?= $(HDK_TC)clang
 CLANG_TARGET	:= -target aarch64-cortex_a57-linux-gnueabi- -march=armv8-a+crc+lse+crypto+fp+simd -mcpu=kryo+crc+crypto+fp+simd 
-GCC_TOOLCHAIN	:= /home/holyangel/android/aarch64-cortex_a57-linux-gnu-lin5.5-17.10/bin/
+GCC_TOOLCHAIN	:= /home/holyangel/android/sdclang/bin/
 CLANG_GCC_TC	:= -gcc-toolchain $(GCC_TOOLCHAIN)
 CLANG_IA_FLAG	= -no-integrated-as
 CLANG_FLAGS	:= $(CLANG_TRIPLE) $(CLANG_TARGET) $(CLANG_GCC_TC) $(CLANG_IA_FLAG) $(OPT_FLAGS)
@@ -408,7 +410,7 @@ include $(srctree)/scripts/Kbuild.include
 
 # Make variables (CC, etc...)
 AS		= $(LLVM_TRIPLE)as $(LTO_FLAGS) $(CLANG_FLAGS) 
-LD		= $(CROSS_COMPILE)ld --strip-debug
+LD		= $(CROSS_COMPILE)ld.gold --strip-debug
 CC		= $(CROSS_COMPILE)gcc -g0
 CPP		= $(CLANG_FLAGS) -E -flto
 AR		= $(LLVM_TRIPLE)ar
@@ -426,8 +428,8 @@ CHECK		= sparse
 
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF)
-CFLAGS_MODULE   = 
-AFLAGS_MODULE   = 
+CFLAGS_MODULE   = $(CLANG_FLAGS) crsD
+AFLAGS_MODULE   = $(CLANG_FLAGS) crsD
 LDFLAGS_MODULE  = --strip-debug
 CFLAGS_KERNEL	= $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS) $(GRAPHITE) 
 AFLAGS_KERNEL	= $(CFLAGS_KERNEL) -flto -fuse-linker-plugin -r
@@ -475,7 +477,9 @@ export VERSION PATCHLEVEL SUBLEVEL KERNELRELEASE KERNELVERSION
 export ARCH SRCARCH CONFIG_SHELL HOSTCC HOSTCFLAGS CROSS_COMPILE AS LD CC
 export CPP AR NM STRIP OBJCOPY OBJDUMP
 export MAKE AWK GENKSYMS INSTALLKERNEL PERL PYTHON UTS_MACHINE
-export HOSTCXX HOSTCXXFLAGS LDFLAGS_MODULE CHECK CHECKFLAGS
+export HOSTCXX HOSTCXXFLAGS LDFLAGS_MODULE CHECK CHECKFLAGS 
+export GEN_OPT_FLAGS ARM_ARCH_OPT EXTRA_OPTS GRAPHITE
+export CLANG_FLAGS OPT_FLAGS LLVM_FLAGS HDK_TC
 
 export KBUILD_CPPFLAGS NOSTDINC_FLAGS LINUXINCLUDE OBJCOPYFLAGS LDFLAGS
 export KBUILD_CFLAGS CFLAGS_KERNEL CFLAGS_MODULE CFLAGS_GCOV CFLAGS_KCOV CFLAGS_KASAN CFLAGS_UBSAN
@@ -683,21 +687,21 @@ ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= $(call cc-option,-Oz,-Os)
 KBUILD_CFLAGS	+= $(call cc-disable-warning,maybe-uninitialized,)
 else
-KBUILD_CFLAGS	+= -O3 $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS) $(GRAPHITE)
+KBUILD_CFLAGS	+= -O2 $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS) $(GRAPHITE)
 endif
 
 # Tell gcc to never replace conditional load with a non-conditional one
 KBUILD_CFLAGS	+= $(call cc-option,--param=allow-store-data-races=0)
 
-ifdef CONFIG_READABLE_ASM
+#ifdef CONFIG_READABLE_ASM
 # Disable optimizations that make assembler listings hard to read.
 # reorder blocks reorders the control in the function
 # ipa clone creates specialized cloned functions
 # partial inlining inlines only parts of functions
-KBUILD_CFLAGS += $(call cc-option,-fno-reorder-blocks,) \
-                 $(call cc-option,-fno-ipa-cp-clone,) \
-                 $(call cc-option,-fno-partial-inlining)
-endif
+#KBUILD_CFLAGS += $(call cc-option,-fno-reorder-blocks,) \
+#                 $(call cc-option,-fno-ipa-cp-clone,) \
+#                 $(call cc-option,-fno-partial-inlining)
+#endif
 
 # ifneq ($(CONFIG_FRAME_WARN),0)
 # KBUILD_CFLAGS += $(call cc-option,-Wframe-larger-than=${CONFIG_FRAME_WARN})
