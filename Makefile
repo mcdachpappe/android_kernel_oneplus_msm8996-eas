@@ -344,7 +344,7 @@ POLLY_FLAGS	:= -mllvm -polly \
 		   -mllvm -polly-vectorizer=stripmine \
 
 HOSTCC       = gcc
-HOSTCXX      = g++
+HOSTCXX      = clang++
 HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89 $(GEN_OPT_FLAGS) $(EXTRA_OPTS) $(GRAPHITE)
 HOSTCXXFLAGS = -O2 $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS) $(GRAPHITE) 
 
