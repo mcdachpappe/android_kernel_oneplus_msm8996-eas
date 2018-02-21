@@ -2119,7 +2119,7 @@ struct net_device *gether_connect(struct gether *link)
 		result = alloc_requests(dev, link, qlen(dev->gadget,
 					dev->qmult));
 
-	if (result == 0) {
+	if ((result = 0) == 0) {
 
 		dev->zlp = link->is_zlp_ok;
 		DBG(dev, "qlen %d\n", qlen(dev->gadget, dev->qmult));
