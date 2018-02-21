@@ -455,7 +455,7 @@ LINUXINCLUDE    := \
 
 KBUILD_CPPFLAGS := -D__KERNEL__
 
-KBUILD_CFLAGS   := -Wstrict-prototypes -Wno-trigraphs \
+KBUILD_CFLAGS   := -Werror -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security -Wno-bool-compare \
@@ -684,10 +684,9 @@ KBUILD_CFLAGS	+= $(call cc-option,-fno-PIE)
 KBUILD_AFLAGS	+= $(call cc-option,-fno-PIE)
 
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
-KBUILD_CFLAGS	+= $(call cc-option,-Oz,-Os)
-KBUILD_CFLAGS	+= $(call cc-disable-warning,maybe-uninitialized,)
+KBUILD_CFLAGS	+= -Os $(call cc-disable-warning,maybe-uninitialized,)
 else
-KBUILD_CFLAGS	+= -O2 $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS) $(GRAPHITE)
+KBUILD_CFLAGS	+= -O2 $(call cc-disable-warning,maybe-uninitialized,) $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS) $(GRAPHITE)
 endif
 
 # Tell gcc to never replace conditional load with a non-conditional one
