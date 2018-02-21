@@ -352,7 +352,7 @@ LTO_TRIPLE	?= $(HDK_TC)lto-
 LLVM_TRIPLE	?= $(HDK_TC)llvm-
 CLANG_TRIPLE	?= $(HDK_TC)clang
 CLANG_TARGET	:= -target aarch64-cortex_a57-linux-gnueabi- -march=armv8-a+crc+lse+crypto+fp+simd -mcpu=kryo+crc+crypto+fp+simd 
-GCC_TOOLCHAIN	:= /home/holyangel/android/sdclang/bin/
+GCC_TOOLCHAIN	:= $(HDK_TC)aarch64-cortex_a57-linux-gnueabi-
 CLANG_GCC_TC	:= -gcc-toolchain $(GCC_TOOLCHAIN)
 CLANG_IA_FLAG	= -no-integrated-as
 CLANG_FLAGS	:= $(CLANG_TRIPLE) $(CLANG_TARGET) $(CLANG_GCC_TC) $(CLANG_IA_FLAG) $(OPT_FLAGS)
