@@ -69,7 +69,6 @@ arch/*/include/generated
 # stgit generated dirs
 patches-*
 out
-upload
 
 # quilt's files
 patches
@@ -99,4 +98,5 @@ x509.genkey
 
 # Kconfig presets
 all.config
+upload/
 
