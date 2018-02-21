@@ -17434,7 +17434,7 @@ eHalStatus csrGetSnr(tpAniSirGlobal pMac,
 {
    eHalStatus status = eHAL_STATUS_SUCCESS;
    vos_msg_t  msg;
-   tANI_U32 sessionId = 0;
+   tANI_U32 sessionId;
 
    tAniGetSnrReq *pMsg;
 
@@ -17451,7 +17451,7 @@ eHalStatus csrGetSnr(tpAniSirGlobal pMac,
 
    pMsg->msgType = pal_cpu_to_be16((tANI_U16)eWNI_SME_GET_SNR_REQ);
    pMsg->msgLen = (tANI_U16)sizeof(tAniGetSnrReq);
-   pMsg->sessionId = sessionId;
+   pMsg->sessionId = sessionId = 0;
    pMsg->staId = staId;
    pMsg->snrCallback = callback;
    pMsg->pDevContext = pContext;
