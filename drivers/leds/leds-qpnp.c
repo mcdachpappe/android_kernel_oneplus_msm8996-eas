@@ -2792,7 +2792,6 @@ static ssize_t rgb_blink_store(struct device *dev,
 	struct led_classdev *led_cdev = dev_get_drvdata(dev);
 	ssize_t rc = -EINVAL, i;
 	u8 enable = 0;
-	led = 0;
 
 	rc = kstrtoul(buf, 10, &blinking);
 	if (rc)

@@ -85,7 +85,7 @@ static DEVICE_ATTR(__attr, 0644, show_##__attr, store_##__attr)
 
 static unsigned long compute_dev_vote(struct devfreq *df)
 {
-	int i, lat_dev = 0;
+	int i, lat_dev;
 	struct memlat_node *node = df->data;
 	struct memlat_hwmon *hw = node->hw;
 	unsigned long max_freq = 0;

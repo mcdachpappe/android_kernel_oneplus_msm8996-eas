@@ -91,7 +91,7 @@ static void send_input(int keyCode)
 static void switch_dev_work(struct work_struct *work)
 {
 	int keyCode;
-	int mode = 0;
+	int mode;
 
 	mutex_lock(&sem);
 
@@ -109,7 +109,7 @@ static void switch_dev_work(struct work_struct *work)
         if (current_mode != mode) {
 		current_mode = mode;
 		switch_set_state(&switch_data->sdev, current_mode);
-		send_input(keyCode = 0);
+		send_input(keyCode);
 		printk("%s ,tristate set to state(%d) \n", __func__, switch_data->sdev.state);
 	}
 

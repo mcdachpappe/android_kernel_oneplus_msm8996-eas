@@ -2180,7 +2180,7 @@ static int a5xx_switch_to_unsecure_mode(struct adreno_device *adreno_dev,
  */
 static int a5xx_microcode_load(struct adreno_device *adreno_dev)
 {
-	void *ptr = 0;
+	void *ptr;
 	struct kgsl_device *device = KGSL_DEVICE(adreno_dev);
 	uint64_t gpuaddr;
 	const char *zap_name;
