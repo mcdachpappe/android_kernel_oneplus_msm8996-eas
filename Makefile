@@ -407,7 +407,7 @@ include $(srctree)/scripts/Kbuild.include
 AS		= $(LLVM_TRIPLE)as $(LTO_FLAGS) $(CLANG_FLAGS) 
 LD		= $(CROSS_COMPILE)ld.gold --strip-debug
 CC		= $(CROSS_COMPILE)gcc -g0
-CPP		= $(CLANG_FLAGS) -E -flto
+CPP		= $(CLANG_FLAGS) -E -c -flto
 AR		= $(LLVM_TRIPLE)ar
 NM		= $(LLVM_TRIPLE)nm
 STRIP		= $(LLVM_TRIPLE)strip
