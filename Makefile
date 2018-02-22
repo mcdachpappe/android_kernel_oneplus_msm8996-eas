@@ -326,13 +326,7 @@ GEN_OPT_FLAGS := \
 
 LTO_FLAGS	:= -flto -mllvm -fuse-ld=qcld
 
-LLVM_FLAGS	:= -fvectorize-loops -floop-pragma \
-		-foptimize-sibling-calls -funit-at-a-time \
-		-mllvm -disable-thumb-scale-addressing=true \
-		-mllvm -enable-round-robin-RA \
-		-mllvm -enable-select-to-intrinsics 
-
-OPT_FLAGS	:= -O3 -fvectorize -fslp-vectorize $(POLLY_FLAGS) $(LLVM_FLAGS)
+OPT_FLAGS	:= -O3 -fvectorize -fslp-vectorize $(POLLY_FLAGS)
 
 POLLY_FLAGS	:= -mllvm -polly \
 		   -mllvm -polly-parallel -lgomp \
@@ -342,6 +336,7 @@ POLLY_FLAGS	:= -mllvm -polly \
 		   -mllvm -polly-ast-use-context \
 		   -mllvm -polly-detect-keep-going \
 		   -mllvm -polly-vectorizer=stripmine \
+		   -mllvm -enable-select-to-intrinsics
 
 HOSTCC       = gcc
 HOSTCXX      = clang++
