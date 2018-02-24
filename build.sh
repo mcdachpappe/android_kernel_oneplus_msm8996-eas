@@ -51,7 +51,7 @@
 
 # Kernel zip Name
 ##############################
-	kn=HDK_OP3_AK2_OMNI_V0.0.4.8.zip
+	kn=HDK_OP3_AK2_OMNI_V0.0.4.9.zip
 
 ############################################################
 # Cleanup
@@ -81,11 +81,11 @@
 ############################################################
 
 	echo "	First pass started.."
-	make "$o" -j32
+	make "$o" -j64
 	echo "	First pass completed!"
 	echo "	"
 	echo "	Starting Second Pass.."
-	make "$o" -j32
+	make "$o" -j64
 	echo "	Second pass completed!"
 
 ############################################################
