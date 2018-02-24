@@ -301,56 +301,53 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 
 # HolyDragon Optimization Flags #
 
-# Graphite
-GRAPHITE	:= -fgraphite -fgraphite-identity -floop-nest-optimize -ftree-loop-distribution -ftree-loop-distribute-patterns
 
 # Extra GCC Optimizations	  
-EXTRA_OPTS	:= -ftree-loop-vectorize -ftree-loop-distribution \
-		-ftree-loop-distribute-patterns -ftree-slp-vectorize \
-		-fira-hoist-pressure -fira-loop-pressure \
-		-fsched-pressure -fsched-spec-load \
-		-fno-prefetch-loop-arrays -fpredictive-commoning \
-		-fvect-cost-model=dynamic -fsimd-cost-model=dynamic \
-		-ftree-partial-pre -fno-gcse
+EXTRA_OPTS := -fira-hoist-pressure -fira-loop-pressure \
+	-fsched-pressure -fsched-spec-load -ftree-vectorize \
+	-fno-guess-branch-probability -fpredictive-commoning \
+	-fvect-cost-model=cheap -fsimd-cost-model=cheap \
+	-ftree-partial-pre -fno-gcse
 
 # Arm Architecture Specific
 # fall back to -march=armv8-a in case the compiler isn't compatible
 # with -mcpu and -mtune
-ARM_ARCH_OPT := $(call cc-option,-march=armv8.1-a+crc+lse+crypto+fp+simd,) -mcpu=cortex-a57+crc+crypto+fp+simd \
-				--param l1-cache-line-size=64 --param l1-cache-size=32 --param l2-cache-size=512 
+ARM_ARCH_OPT := $(call cc-option,-march=armv8.1-a+crc+lse+crypto+fp+simd,) \
+	-mcpu=cortex-a57+crc+crypto+fp+simd --param l1-cache-line-size=64 --param l1-cache-size=32 --param l2-cache-size=512
 
 # Optional
 GEN_OPT_FLAGS := \
  -DNDEBUG -pipe \
- -fomit-frame-pointer -fivopts 
+ -fomit-frame-pointer 
 
-LTO_FLAGS	:= -flto -mllvm -fuse-ld=qcld
+LTO_FLAGS := -flto -mllvm -fuse-ld=qcld
 
-OPT_FLAGS	:= -O3 -fvectorize -fslp-vectorize $(POLLY_FLAGS)
+POLLY_FLAGS := -mllvm -polly \
+	-mllvm -polly-parallel \
+	-mllvm -polly-run-dce \
+	-mllvm -polly-run-inliner \
+	-mllvm -polly-opt-fusion=max \
+	-mllvm -polly-ast-use-context \
+	-mllvm -polly-detect-keep-going \
+	-mllvm -polly-vectorizer=stripmine \
+	-mllvm -enable-select-to-intrinsics
 
-POLLY_FLAGS	:= -mllvm -polly \
-		   -mllvm -polly-parallel -lgomp \
-		   -mllvm -polly-run-dce \
-		   -mllvm -polly-run-inliner \
-		   -mllvm -polly-opt-fusion=max \
-		   -mllvm -polly-ast-use-context \
-		   -mllvm -polly-detect-keep-going \
-		   -mllvm -polly-vectorizer=stripmine \
-		   -mllvm -enable-select-to-intrinsics
+OPT_FLAGS := -O3 \
+	-march=armv8-a+crypto -mcpu=cortex-a53+crypto -mfpu=crypto-neon-fp-armv8 \
+	$(POLLY_FLAGS)
+
+LTO_TRIPLE = $(HDK_TC)lto-	
+LLVM_TRIPLE = $(HDK_TC)llvm-
+CLANG_TRIPLE = $(HDK_TC)clang
+CPP_TRIPLE = $(HDK_TC)clang++
+
+CLANG_IA_FLAG += -no-integrated-as
+CLANG_FLAGS := $(CLANG_TRIPLE) $(CLANG_IA_FLAG) $(OPT_FLAGS)
 
 HOSTCC       = gcc
-HOSTCXX      = clang++
-HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89 $(GEN_OPT_FLAGS) $(EXTRA_OPTS) $(GRAPHITE)
-HOSTCXXFLAGS = -O2 $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS) $(GRAPHITE) 
-
-LTO_TRIPLE	?= $(HDK_TC)lto-	
-LLVM_TRIPLE	?= $(HDK_TC)llvm-
-CLANG_TRIPLE	?= $(HDK_TC)clang
-CLANG_TARGET	:= -target aarch64-cortex_a57-linux-gnueabi- -march=armv8-a+crc+lse+crypto+fp+simd -mcpu=kryo+crc+crypto+fp+simd 
-GCC_TOOLCHAIN	:= $(HDK_TC)aarch64-cortex_a57-linux-gnueabi-
-CLANG_GCC_TC	:= -gcc-toolchain $(GCC_TOOLCHAIN)
-CLANG_IA_FLAG	= -no-integrated-as
-CLANG_FLAGS	:= $(CLANG_TRIPLE) $(CLANG_TARGET) $(CLANG_GCC_TC) $(CLANG_IA_FLAG) $(OPT_FLAGS)
+HOSTCXX      = g++
+HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89 $(GEN_OPT_FLAGS)
+HOSTCXXFLAGS = -O2 $(GEN_OPT_FLAGS)
 
 ifeq ($(shell $(HOSTCC) -v 2>&1 | grep -c "clang version"), 1)
 HOSTCFLAGS  += -Wno-unused-value -Wno-unused-parameter \
@@ -404,10 +401,10 @@ $(srctree)/scripts/Kbuild.include: ;
 include $(srctree)/scripts/Kbuild.include
 
 # Make variables (CC, etc...)
-AS		= $(LLVM_TRIPLE)as $(LTO_FLAGS) $(CLANG_FLAGS) 
+AS		= $(LLVM_TRIPLE)as $(LTO_FLAGS) $(OPT_FLAGS) -mfix-cortex-a53-843419
 LD		= $(CROSS_COMPILE)ld.gold --strip-debug
 CC		= $(CROSS_COMPILE)gcc -g0
-CPP		= $(CLANG_FLAGS) -E -c -flto
+CPP		= $(CLANG_FLAGS) -E -flto
 AR		= $(LLVM_TRIPLE)ar
 NM		= $(LLVM_TRIPLE)nm
 STRIP		= $(LLVM_TRIPLE)strip
@@ -423,10 +420,10 @@ CHECK		= sparse
 
 CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 		  -Wbitwise -Wno-return-void $(CF)
-CFLAGS_MODULE   = $(CLANG_FLAGS) crsD
-AFLAGS_MODULE   = $(CLANG_FLAGS) crsD
+CFLAGS_MODULE   =
+AFLAGS_MODULE   =
 LDFLAGS_MODULE  = --strip-debug
-CFLAGS_KERNEL	= $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS) $(GRAPHITE) 
+CFLAGS_KERNEL	= $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS)
 AFLAGS_KERNEL	= $(CFLAGS_KERNEL) -flto -fuse-linker-plugin -r
 CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage -fno-tree-loop-im
 CFLAGS_KCOV	= -fsanitize-coverage=trace-pc
@@ -455,10 +452,10 @@ KBUILD_CFLAGS   := -Werror -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -Werror-implicit-function-declaration \
 		   -Wno-format-security -Wno-bool-compare \
 		   -std=gnu89 \
-		   $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS) $(GRAPHITE) \
+		   $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS)
 
 KBUILD_AFLAGS_KERNEL := $(CFLAGS_KERNEL) -flto -fuse-linker-plugin -r
-KBUILD_CFLAGS_KERNEL := $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS) $(GRAPHITE)
+KBUILD_CFLAGS_KERNEL := $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS)
 KBUILD_AFLAGS   := -D__ASSEMBLY__
 KBUILD_AFLAGS_MODULE  := -DMODULE
 KBUILD_CFLAGS_MODULE  := -DMODULE
@@ -473,7 +470,7 @@ export ARCH SRCARCH CONFIG_SHELL HOSTCC HOSTCFLAGS CROSS_COMPILE AS LD CC
 export CPP AR NM STRIP OBJCOPY OBJDUMP
 export MAKE AWK GENKSYMS INSTALLKERNEL PERL PYTHON UTS_MACHINE
 export HOSTCXX HOSTCXXFLAGS LDFLAGS_MODULE CHECK CHECKFLAGS 
-export GEN_OPT_FLAGS ARM_ARCH_OPT EXTRA_OPTS GRAPHITE
+export GEN_OPT_FLAGS ARM_ARCH_OPT EXTRA_OPTS
 export CLANG_FLAGS OPT_FLAGS LLVM_FLAGS HDK_TC
 
 export KBUILD_CPPFLAGS NOSTDINC_FLAGS LINUXINCLUDE OBJCOPYFLAGS LDFLAGS
@@ -682,7 +679,7 @@ KBUILD_AFLAGS	+= $(call cc-option,-fno-PIE)
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os $(call cc-disable-warning,maybe-uninitialized,)
 else
-KBUILD_CFLAGS	+= -O2 $(call cc-disable-warning,maybe-uninitialized,) $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS) $(GRAPHITE)
+KBUILD_CFLAGS	+= -O2 $(call cc-disable-warning,maybe-uninitialized,) $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS)
 endif
 
 # Tell gcc to never replace conditional load with a non-conditional one
