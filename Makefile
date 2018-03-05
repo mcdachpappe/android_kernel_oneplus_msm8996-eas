@@ -1,7 +1,7 @@
 VERSION = 3
 PATCHLEVEL = 18
 SUBLEVEL = 92
-EXTRAVERSION = -HolyDragon-v0.0.4.9
+EXTRAVERSION = -HolyDragon-v0.0.4.9.3
 NAME = Apalala
 
 # *DOCUMENTATION*
@@ -250,7 +250,7 @@ SUBARCH := $(shell uname -m | sed -e s/i.86/x86/ -e s/x86_64/x86/ \
 # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
 ARCH		?= $(SUBARCH)
 CROSS_COMPILE	?= $(CONFIG_CROSS_COMPILE:"%"=%)
-HDK_TC		:= /home/holyangel/android/sdclang/bin/
+HDK_TC		:= /home/holyangel/android/sdclang-5.5/bin/
 ARCH		:= arm64
 SUBARCH		:= arm64
 CROSS_COMPILE	:= $(HDK_TC)aarch64-cortex_a57-linux-gnueabi-
