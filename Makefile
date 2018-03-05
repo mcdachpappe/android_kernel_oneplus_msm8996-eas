@@ -403,13 +403,13 @@ $(srctree)/scripts/Kbuild.include: ;
 include $(srctree)/scripts/Kbuild.include
 
 # Make variables (CC, etc...)
-AS		= $(LLVM_TRIPLE)as $(LTO_FLAGS) $(OPT_FLAGS) -mfix-cortex-a53-843419
-LD		= $(CROSS_COMPILE)ld.gold --strip-debug
+AS		= $(CROSS_COMPILE)as
+LD		= $(CROSS_COMPILE)ld.gold -fuse-ld=qcld --strip-debug
 CC		= $(CROSS_COMPILE)gcc -g0
-CPP		= $(CLANG_FLAGS) -E -flto
+CPP		= $(CC) -E -fdeclone-ctor-dtor -flto -fuse-linker-plugin
 AR		= $(LLVM_TRIPLE)ar
-NM		= $(LLVM_TRIPLE)nm
-STRIP		= $(LLVM_TRIPLE)strip
+NM		= $(CROSS_COMPILE)nm
+STRIP		= $(CROSS_COMPILE)strip
 OBJCOPY		= $(CROSS_COMPILE)objcopy
 OBJDUMP		= $(CROSS_COMPILE)objdump
 AWK		= awk
