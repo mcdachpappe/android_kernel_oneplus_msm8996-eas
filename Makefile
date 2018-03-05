@@ -303,7 +303,9 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 
 
 # Extra GCC Optimizations	  
-EXTRA_OPTS := -fira-hoist-pressure -fira-loop-pressure \
+EXTRA_OPTS := \
+	-falign-loops -falign-functions \
+	-fira-hoist-pressure -fira-loop-pressure \
 	-fsched-pressure -fsched-spec-load -ftree-vectorize \
 	-fno-guess-branch-probability -fpredictive-commoning \
 	-fvect-cost-model=cheap -fsimd-cost-model=cheap \
