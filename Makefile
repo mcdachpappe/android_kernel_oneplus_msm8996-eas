@@ -317,8 +317,8 @@ EXTRA_OPTS := \
 # with -mcpu and -mtune
 ARM_ARCH_OPT := \
 	$(call cc-option,-march=armv8.1-a+crc+lse+crypto+fp+simd,) \
-	-mcpu=cortex-a57+crc+crypto+fp+simd \
-	--param l1-cache-line-size=64 --param l1-cache-size=32 --param l2-cache-size=512
+	-mtune=cortex-a57 -mcpu=cortex-a57+crc+crypto+fp+simd \
+	--param l1-cache-line-size=64 --param l1-cache-size=32 --param l2-cache-size=512 
 
 # Optional
 GEN_OPT_FLAGS := \
