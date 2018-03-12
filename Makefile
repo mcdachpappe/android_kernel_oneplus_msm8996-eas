@@ -301,6 +301,7 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 
 # HolyDragon Optimization Flags #
 
+GRAPHITE = -fgraphite -fgraphite-identity -floop-interchange -ftree-loop-distribution -floop-strip-mine -floop-block -ftree-loop-linear
 
 # Extra GCC Optimizations	  
 EXTRA_OPTS := \
@@ -350,8 +351,8 @@ CLANG_FLAGS := $(CLANG_TRIPLE) $(CLANG_IA_FLAG) $(OPT_FLAGS)
 
 HOSTCC       = gcc
 HOSTCXX      = g++
-HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89 $(GEN_OPT_FLAGS)
-HOSTCXXFLAGS = -O2 $(GEN_OPT_FLAGS)
+HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89 $(GEN_OPT_FLAGS) $(EXTRA_OPTS) $(GRAPHITE)
+HOSTCXXFLAGS = -O2 $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS) $(GRAPHITE) -fdeclone-ctor-dtor
 
 ifeq ($(shell $(HOSTCC) -v 2>&1 | grep -c "clang version"), 1)
 HOSTCFLAGS  += -Wno-unused-value -Wno-unused-parameter \
