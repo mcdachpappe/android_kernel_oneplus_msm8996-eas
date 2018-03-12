@@ -459,11 +459,11 @@ KBUILD_CFLAGS   := -Werror -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -std=gnu89 \
 		   $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS)
 
-KBUILD_AFLAGS_KERNEL := $(CFLAGS_KERNEL) -flto -fuse-linker-plugin -r
+KBUILD_AFLAGS_KERNEL := $(CFLAGS_KERNEL) $(GEN_OPT_FLAGS) -flto -fuse-linker-plugin -r
 KBUILD_CFLAGS_KERNEL := $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS)
 KBUILD_AFLAGS   := -D__ASSEMBLY__
-KBUILD_AFLAGS_MODULE  := -DMODULE
-KBUILD_CFLAGS_MODULE  := -DMODULE
+KBUILD_AFLAGS_MODULE  := -DMODULE $(GEN_OPT_FLAGS)
+KBUILD_CFLAGS_MODULE  := -DMODULE $(GEN_OPT_FLAGS)
 KBUILD_LDFLAGS_MODULE := -T $(srctree)/scripts/module-common.lds
 
 # Read KERNELRELEASE from include/config/kernel.release (if it exists)
