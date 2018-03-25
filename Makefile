@@ -1,8 +1,8 @@
 VERSION = 3
 PATCHLEVEL = 18
 SUBLEVEL = 98
-EXTRAVERSION = -HolyDragon-v0.0.4.9.5
-NAME = Apalala
+EXTRAVERSION = -HolyDragon-v0.0.5
+NAME = Azhi Dahaka
 
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
