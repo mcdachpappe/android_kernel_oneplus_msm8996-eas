@@ -407,7 +407,7 @@ include $(srctree)/scripts/Kbuild.include
 
 # Make variables (CC, etc...)
 AS		= $(CROSS_COMPILE)as
-LD		= $(CROSS_COMPILE)ld.gold -fuse-ld=qcld --strip-debug
+LD		= $(CROSS_COMPILE)ld.bfd -fuse-ld=qcld --strip-debug
 CC		= $(CROSS_COMPILE)gcc -g0
 CPP		= $(CC) -E -fdeclone-ctor-dtor -flto -fuse-linker-plugin
 AR		= $(LLVM_TRIPLE)ar
