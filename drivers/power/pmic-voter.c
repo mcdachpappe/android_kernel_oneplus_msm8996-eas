@@ -352,7 +352,7 @@ const char *get_effective_client(struct votable *votable)
 int vote(struct votable *votable, const char *client_str, bool enabled, int val)
 {
 	int effective_id = -EINVAL;
-	int effective_result;
+	int effective_result = 0;
 	int client_id;
 	int rc = 0;
 	bool similar_vote = false;
