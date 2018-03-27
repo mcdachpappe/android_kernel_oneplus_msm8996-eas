@@ -2810,7 +2810,7 @@ static ssize_t rgb_blink_store(struct device *dev,
 		return count;
 
 	rc = qpnp_led_masked_write(led,
-		RGB_LED_EN_CTL(led->base = 0),
+		RGB_LED_EN_CTL(led->base),
 		enable, blinking ? enable : RGB_LED_DISABLE);
 	if (rc) {
 		dev_err(&led->spmi_dev->dev,
