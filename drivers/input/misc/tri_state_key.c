@@ -90,8 +90,8 @@ static void send_input(int keyCode)
 
 static void switch_dev_work(struct work_struct *work)
 {
-	int keyCode;
-	int mode;
+	int keyCode = 0;
+	int mode = 0;
 
 	mutex_lock(&sem);
 
