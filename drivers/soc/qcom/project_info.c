@@ -405,7 +405,7 @@ uint32 get_hw_version(void)
 int __init init_project_info(void)
 {
 	static bool project_info_init_done;
-	int ddr_size;
+	int ddr_size = 0;
 
 	if (project_info_init_done)
 		return 0;
