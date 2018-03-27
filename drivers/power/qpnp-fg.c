@@ -8549,6 +8549,7 @@ out:
 static int fg_memif_init(struct fg_chip *chip)
 {
 	int rc;
+	u8 dig_major;
 
 	rc = fg_read(chip, chip->revision, chip->mem_base + DIG_MINOR, 4);
 	if (rc) {
