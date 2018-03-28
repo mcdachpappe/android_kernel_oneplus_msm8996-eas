@@ -64,6 +64,7 @@
 #define BQ27541_REG_AP			0x24
 #define BQ27541_REG_TTECP		0x26
 #define BQ27541_REG_SOH			0x28
+#define BQ27541_REG_CC			0x2a
 #define BQ27541_REG_SOC			0x2c
 #define BQ27541_REG_NIC			0x2e
 #define BQ27541_REG_ICR			0x30
@@ -785,21 +786,32 @@ static int bq27541_remaining_capacity(struct bq27541_device_info *di)
 	return cap;
 }
 
-static int bq27541_batt_health(struct bq27541_device_info *di)
+/* Full charge capacity in mAh */
+static int bq27541_battery_fcc(struct bq27541_device_info *di)
 {
-	int ret;
-	int health = 0;
+	int ret, fcc_mah;
 
-	if(di->alow_reading) {
-		ret = bq27541_read(BQ27541_REG_NIC, &health, 0, di);
-		if (ret) {
-			pr_err("error reading health\n");
-			return ret;
-		}
-		di->health_pre = health;
+	ret = bq27541_read(BQ27541_REG_FCC, &fcc_mah, 0, di);
+	if (ret) {
+		dev_err(di->dev, "error reading fcc, ret: %d\n", ret);
+		return 0;
 	}
 
-	return di->health_pre;
+	return fcc_mah;
+}
+
+/* Cycle count */
+static int bq27541_battery_cycles(struct bq27541_device_info *di)
+{
+	int ret, cycle_count;
+
+	ret = bq27541_read(BQ27541_REG_CC, &cycle_count, 0, di);
+	if (ret) {
+		dev_err(di->dev, "error reading cycle count, ret: %d\n", ret);
+		return 0;
+	}
+
+	return cycle_count;
 }
 
 static int bq27541_get_battery_mvolts(void)
@@ -810,11 +822,6 @@ static int bq27541_get_battery_mvolts(void)
 static int bq27541_get_batt_remaining_capacity(void)
 {
 	return bq27541_remaining_capacity(bq27541_di);
-}
-
-static int bq27541_get_batt_health(void)
-{
-	return bq27541_batt_health(bq27541_di);
 }
 
 static int bq27541_get_battery_temperature(void)
@@ -895,6 +902,15 @@ static bool bq27541_get_4p4v_battery_present(void)
 	return false;
 }
 
+static int bq27541_get_battery_fcc(void)
+{
+	return bq27541_battery_fcc(bq27541_di);
+}
+
+static int bq27541_get_battery_cycles(void)
+{
+	return bq27541_battery_cycles(bq27541_di);
+}
 
 static struct external_battery_gauge bq27541_batt_gauge = {
 	.get_battery_mvolts     = bq27541_get_battery_mvolts,
@@ -903,13 +919,15 @@ static struct external_battery_gauge bq27541_batt_gauge = {
 	.is_battery_temp_within_range   = bq27541_is_battery_temp_within_range,
 	.is_battery_id_valid        = bq27541_is_battery_id_valid,
 	.get_batt_remaining_capacity        =bq27541_get_batt_remaining_capacity,
-	.get_batt_health        = bq27541_get_batt_health,
+
 	.get_battery_soc            = bq27541_get_battery_soc,
 	.get_average_current        = bq27541_get_average_current,
 	.set_alow_reading		= bq27541_set_alow_reading,
 	.set_lcd_off_status		= bq27541_set_lcd_off_status,
 	.fast_chg_started_status	= bq27541_get_fastchg_started_status,
 	.get_4p4v_battery_present	= bq27541_get_4p4v_battery_present,
+	.get_battery_fcc		= bq27541_get_battery_fcc,
+	.get_battery_cycles		= bq27541_get_battery_cycles,
 };
 #define BATTERY_SOC_UPDATE_MS 6000
 #define RESUME_SCHDULE_SOC_UPDATE_WORK_MS 60000
