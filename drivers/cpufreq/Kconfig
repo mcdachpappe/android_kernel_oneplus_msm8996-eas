@@ -143,11 +143,16 @@ config CPU_FREQ_DEFAULT_GOV_DARKNESS
 	bool "darkness"
 	select CPU_FREQ_GOV_DARKNESS
 	help
+	  It's based on nightmare but more simple and fast, basic configs but very complex structure. 
+	  It is an updated nightmare gov and improved stability, so far it is quite stable in tests
 
 config CPU_FREQ_DEFAULT_GOV_NIGHTMARE
 	bool "nightmare"
 	select CPU_FREQ_GOV_NIGHTMARE
 	help
+	  A PegasusQ modified, less aggressive and more stable. A good compromise between performance and battery. 
+	  In addition to the SoD is a prevention because it usually does not hotplug.
+
 endchoice
 
 config CPU_FREQ_GOV_PERFORMANCE
@@ -289,6 +294,7 @@ config CPUFREQ_DT
 config CPU_FREQ_GOV_ALUCARD
 	tristate "'alucard' cpufreq governor"
 	depends on CPU_FREQ
+	select CPU_FREQ_GOV_COMMON
 	help
 	  'alucard' - A favourite choice and one of the original governors that Alucard_24 made. 
 		Alucard is based on ondemand but has been heavily tweaked to bring better battery life and performance. 
