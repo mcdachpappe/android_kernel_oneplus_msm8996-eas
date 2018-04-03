@@ -1,3 +1,29 @@
+OP3 Omni/AOSP Kernel Source
+
+
+For this repo, you need to clone to 'msm8996' folder
+git clone https://github.com/holyangel/OP3.git -b omni msm8996
+
+You will need to edit line 253 of Makefile to point to where this source is.
+
+I am using my own toolchain which is a conglomeration of 
+Snapdragon llvm clang 4.0.2 and my own custom build of GCC-5.5.
+To sync Toolchain: 
+git clone https://github.com/HolyDragonProject/android_vendor_qcom_sdclang.git -b HDTC sdclang-5.5
+You will need to edit line 256 of Makefile to point to where this toolchain is.
+
+3 Build scripts are provided for you to build, you will need to edit them to point to your source.
+First create a folder named 'upload' at OP3 source root.
+
+1) build.sh - removes out folder and compiled files, creates a full flashable kernel zip for you in 'upload' folder.
+
+2) run.sh - removes out folder and only compiles kernel at out/arch/arm64/boot
+
+3) rc.sh - used to recompile without cleaning anything(usually if you need to fix things and finish compiling)
+
+All scripts build with 32 or 64 threads, you will want to change that to your own core count.
+
+
         Linux kernel release 3.x <http://kernel.org/>
 
 These are the release notes for Linux version 3.  Read them carefully,
