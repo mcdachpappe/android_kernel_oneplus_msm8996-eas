@@ -322,7 +322,7 @@ ARM_ARCH_OPT := \
 
 # Optional
 GEN_OPT_FLAGS := \
- -DNDEBUG -pipe \
+ -DNDEBUG -g0 -pipe \
  -fomit-frame-pointer 
 
 LTO_FLAGS := -flto -fuse-linker-plugin -fuse-ld=qcld
