@@ -316,7 +316,7 @@ EXTRA_OPTS := \
 # fall back to -march=armv8-a in case the compiler isn't compatible
 # with -mcpu and -mtune
 ARM_ARCH_OPT := \
-	$(call cc-option,-march=armv8.1-a+crc+lse+crypto+fp+simd,) \
+	$(call cc-option,-march=armv8-a+crc+crypto+fp+simd,) \
 	-mtune=cortex-a57 -mcpu=cortex-a57+crc+crypto+fp+simd \
 	--param l1-cache-line-size=64 --param l1-cache-size=32 --param l2-cache-size=512 
 
