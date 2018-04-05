@@ -409,7 +409,7 @@ include $(srctree)/scripts/Kbuild.include
 AS		= $(CROSS_COMPILE)as
 LD		= $(CROSS_COMPILE)ld.bfd -fuse-ld=qcld --strip-debug
 CC		= $(CROSS_COMPILE)gcc -g0
-CPP		= $(CC) -E -fdeclone-ctor-dtor -flto -fuse-linker-plugin
+CPP		= $(CC) -E -flto -fuse-linker-plugin
 AR		= $(LLVM_TRIPLE)ar
 NM		= $(CROSS_COMPILE)nm
 STRIP		= $(CROSS_COMPILE)strip
