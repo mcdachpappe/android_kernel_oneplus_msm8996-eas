@@ -305,7 +305,7 @@ GRAPHITE = -fgraphite -fgraphite-identity -floop-interchange -ftree-loop-distrib
 
 # Extra GCC Optimizations	  
 EXTRA_OPTS := \
-	-falign-loops -falign-functions \
+	-falign-loops=1 -falign-functions=1 -falign-labels=1 -falign-jumps=1 \
 	-fira-hoist-pressure -fira-loop-pressure \
 	-fsched-pressure -fsched-spec-load -ftree-vectorize \
 	-fno-guess-branch-probability -fpredictive-commoning \

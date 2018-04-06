@@ -134,8 +134,8 @@ cc-option-yn = $(call try-run,\
 
 # cc-option-align
 # Prefix align with either -falign or -malign
-cc-option-align = $(subst -functions=0,,\
-	$(call cc-option,-falign-functions=0,-malign-functions=0))
+cc-option-align = $(subst -functions=1,,\
+	$(call cc-option,-falign-functions=1,-malign-functions=1))
 
 # cc-disable-warning
 # Usage: cflags-y += $(call cc-disable-warning,unused-but-set-variable)
