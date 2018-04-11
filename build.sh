@@ -23,7 +23,7 @@
 ############################################################ 
 
 # Source defconfig used to build
-	dc=HDO_defconfig
+	dc=HD_defconfig
 
 # Source Path to kernel tree
 	k=/home/holyangel/android/msm8996
