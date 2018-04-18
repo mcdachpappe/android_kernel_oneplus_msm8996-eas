@@ -3450,12 +3450,15 @@ static void hdd_ipa_send_pkt_to_tl(struct hdd_ipa_iface_context *iface_context,
 	 * During CAC period, data packets shouldn't be sent over the air so
 	 * drop all the packets here
 	 */
-	if (WLAN_HDD_GET_AP_CTX_PTR(adapter)->dfs_cac_block_tx) {
-		ipa_free_skb(ipa_tx_desc);
-		adf_os_spin_unlock_bh(&iface_context->interface_lock);
-		iface_context->stats.num_tx_cac_drop++;
-		hdd_ipa_rm_try_release(hdd_ipa);
-		return;
+	if (WLAN_HDD_SOFTAP == adapter->device_mode ||
+	    WLAN_HDD_P2P_GO == adapter->device_mode) {
+		if (WLAN_HDD_GET_AP_CTX_PTR(adapter)->dfs_cac_block_tx) {
+			ipa_free_skb(ipa_tx_desc);
+			adf_os_spin_unlock_bh(&iface_context->interface_lock);
+			iface_context->stats.num_tx_cac_drop++;
+			hdd_ipa_rm_try_release(hdd_ipa);
+			return;
+		}
 	}
 
 	interface_id = adapter->sessionId;
@@ -5026,7 +5029,7 @@ static int hdd_ipa_debugfs_init(struct hdd_ipa_priv *hdd_ipa)
 #ifdef WLAN_OPEN_SOURCE
 	hdd_ipa->debugfs_dir = debugfs_create_dir("cld" SUFFIX,
 					hdd_ipa->hdd_ctx->wiphy->debugfsdir);
-	if (IS_ERR_OR_NULL(hdd_ipa->debugfs_dir))
+	if (!hdd_ipa->debugfs_dir)
 		return -ENOMEM;
 
 	debugfs_create_file("ipa-stats", S_IRUSR, hdd_ipa->debugfs_dir,
@@ -5168,8 +5171,7 @@ VOS_STATUS hdd_ipa_init(hdd_context_t *hdd_ctx)
 
 	ret = hdd_ipa_debugfs_init(hdd_ipa);
 	if (ret)
-		HDD_IPA_LOG(VOS_TRACE_LEVEL_ERROR,
-			"hdd_ipa_debugfs_init failed");
+		goto fail_alloc_rx_pipe_desc;
 
 	if (!hdd_ipa_uc_is_enabled(hdd_ipa)) {
 		hdd_ipa->ipv4_notifier.notifier_call = hdd_ipa_ipv4_changed;
