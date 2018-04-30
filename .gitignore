@@ -100,3 +100,5 @@ x509.genkey
 all.config
 upload/
 
+
+build/Changelog\.txt
