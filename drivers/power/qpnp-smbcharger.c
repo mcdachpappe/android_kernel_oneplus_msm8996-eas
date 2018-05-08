@@ -2122,11 +2122,7 @@ static int smbchg_set_usb_current_max(struct smbchg_chip *chip,
 			}
 			chip->usb_max_current_ma = 500;
 		}
-#ifdef CONFIG_FORCE_FAST_CHARGE
-		if ((force_fast_charge > 0 && current_ma == CURRENT_500_MA) || current_ma == CURRENT_900_MA) {
-#else
-		if (current_ma == CURRENT_900_MA) {
-#endif
+		if ((current_ma == CURRENT_900_MA) || (force_fast_charge > 0 && current_ma == CURRENT_500_MA)) {
 			rc = smbchg_sec_masked_write(chip,
 					chip->usb_chgpth_base + CHGPTH_CFG,
 					CFG_USB_2_3_SEL_BIT, CFG_USB_3);
@@ -5551,7 +5547,7 @@ static void handle_usb_removal(struct smbchg_chip *chip)
 		chip->usb_enum_status = false;
 		chip->non_std_chg_present = false;
 		chip->boot_usb_present = true;
-		chip->re_trigr_dash_done = 0;
+		chip->re_trigr_dash_done = false;
 		qpnp_battery_temp_region_set(chip, BATT_TEMP_INVALID);
 		wake_unlock(&chip->chg_wake_lock);
 		cancel_delayed_work(&chip->non_standard_charger_check_work);
