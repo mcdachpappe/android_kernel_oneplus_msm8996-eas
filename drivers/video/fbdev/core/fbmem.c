@@ -1116,10 +1116,10 @@ fb_blank(struct fb_info *info, int blank)
 	/*ykl add debug log*/
 			debug_blank(blank,0);
 	//Wujialong 20160314 enable sched_boost when wakeup and disable sched_boost when screen on
-	if(blank==FB_BLANK_UNBLANK)
-	{
-		sched_set_boost(0);
-	}
+	//if(blank==FB_BLANK_UNBLANK)
+	//{
+	//	sched_set_boost(0);
+	//}
  	return ret;
 }
 EXPORT_SYMBOL(fb_blank);
