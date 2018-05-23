@@ -622,8 +622,7 @@ static int __noreturn rcu_tasks_kthread(void *arg)
 			int rtst;
 			struct task_struct *t1;
 
-			schedule_timeout_interruptible(HZ);
-			rtst = ACCESS_ONCE(rcu_task_stall_timeout);
+			rtst = READ_ONCE(rcu_task_stall_timeout);
 			needreport = rtst > 0 &&
 				     time_after(jiffies, lastreport + rtst);
 			if (needreport)
