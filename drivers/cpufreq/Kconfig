@@ -146,6 +146,12 @@ config CPU_FREQ_DEFAULT_GOV_DARKNESS
 	  It's based on nightmare but more simple and fast, basic configs but very complex structure. 
 	  It is an updated nightmare gov and improved stability, so far it is quite stable in tests
 
+config CPU_FREQ_DEFAULT_GOV_TRIPNDROID
+	bool "tripndroid"
+	select CPU_FREQ_GOV_TRIPNDROID
+	help
+	  Select tripndroid cpu governor as default
+
 config CPU_FREQ_DEFAULT_GOV_NIGHTMARE
 	bool "nightmare"
 	select CPU_FREQ_GOV_NIGHTMARE
@@ -223,6 +229,13 @@ config CPU_FREQ_GOV_INTERACTIVE
 	  For details, take a look at linux/Documentation/cpu-freq.
 
 	  If in doubt, say N.
+config CPU_FREQ_GOV_TRIPNDROID
+    tristate "'tripndroid' cpufreq governor"
+    depends on CPU_FREQ
+    help
+	  Custom cpu governor designed specificly for multi cpu mobile devices.
+	  Aiming at a balance between performance and battery lifetime, but it
+	  hangs a little bit more towards performance at low latencys.
 
 config CPU_FREQ_GOV_CONSERVATIVE
 	tristate "'conservative' cpufreq governor"
