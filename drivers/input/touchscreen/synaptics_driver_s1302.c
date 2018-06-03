@@ -673,6 +673,9 @@ static void int_key(struct synaptics_ts_data *ts )
     int ret;
 	int button_key;
 
+    if (ts->is_suspended == 1)
+        return;
+
     ret = synaptics_rmi4_i2c_write_byte(ts->client, 0xff, 0x02 );
     if (ret < 0) {
         TPD_ERR("%s: line[%d]Failed to change page!!\n",
