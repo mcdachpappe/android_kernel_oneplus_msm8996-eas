@@ -250,10 +250,10 @@ SUBARCH := $(shell uname -m | sed -e s/i.86/x86/ -e s/x86_64/x86/ \
 # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
 ARCH		?= $(SUBARCH)
 CROSS_COMPILE	?= $(CONFIG_CROSS_COMPILE:"%"=%)
-HDK_TC		:= /home/holyangel/android/Toolchains/sdclang-5.5/bin/
+HDK_TC		:= /home/holyangel/android/Toolchains/sdclang-6.4/bin/
 ARCH		:= arm64
 SUBARCH		:= arm64
-CROSS_COMPILE	:= $(HDK_TC)aarch64-cortex_a57-linux-gnueabi-
+CROSS_COMPILE	:= $(HDK_TC)aarch64-cortex_a57-linux-gnu-
 
 # Architecture as present in compile.h
 UTS_MACHINE 	:= $(ARCH)
@@ -407,7 +407,7 @@ include $(srctree)/scripts/Kbuild.include
 
 # Make variables (CC, etc...)
 AS		= $(CROSS_COMPILE)as
-LD		= $(CROSS_COMPILE)ld.lld -m aarch64linux --strip-debug --lto-O3
+LD		= $(HDK_TC)ld.lld -m aarch64linux --strip-debug --lto-O3
 CC		= $(CROSS_COMPILE)gcc -g0
 CPP		= $(CC) -E -flto -fuse-linker-plugin
 AR		= $(LLVM_TRIPLE)ar
@@ -678,6 +678,8 @@ KBUILD_CFLAGS	+= $(call cc-disable-warning,format-truncation)
 KBUILD_CFLAGS	+= $(call cc-disable-warning,format-overflow)
 KBUILD_CFLAGS	+= $(call cc-disable-warning,int-in-bool-context)
 KBUILD_CFLAGS	+= $(call cc-disable-warning,logical-not-parentheses)
+KBUILD_CFLAGS	+= $(call cc-disable-warning,misleading-indentation)
+KBUILD_CFLAGS	+= $(call cc-disable-warning,maybe-uninitialized)
 KBUILD_CFLAGS	+= $(call cc-option,-fno-PIE)
 KBUILD_AFLAGS	+= $(call cc-option,-fno-PIE)
 
