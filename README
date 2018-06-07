@@ -9,7 +9,7 @@ You will need to edit line 253 of Makefile to point to where this source is.
 I am using my own toolchain which is a conglomeration of 
 Snapdragon llvm clang 4.0.2 and my own custom build of GCC-5.5.
 To sync Toolchain: 
-git clone https://github.com/HolyDragonProject/android_vendor_qcom_sdclang.git -b HDTC sdclang-5.5
+git clone https://gitlab.com/HolyDragonProject/android_vendor_qcom_sdclang.git -b HDTC-lin6.4 sdclang-lin6.4
 
 You will need to edit line 256 of Makefile to point to where this toolchain is.
 
@@ -28,6 +28,7 @@ All scripts build with 32 or 64 threads, you will want to change that to your ow
 
 As of version 8 of this kernel source, you will need libtinfo6.so in order to compile with lld.
 Libtinfo6-dev should be correct package name. Experimental for *buntu, may need compiled for archlinux.
+Can also change to a different linker, ld.bfd or ld.gold if thats easier but won't be the same build.
 
 
 =======================================================================================================================
