@@ -26,6 +26,7 @@
 #include <linux/perf_event.h>
 #include <linux/context_tracking.h>
 #include <linux/rq_stats.h>
+#include <linux/mm.h>
 
 #include <asm/irq_regs.h>
 
@@ -673,18 +674,17 @@ static ktime_t tick_nohz_stop_sched_tick(struct tick_sched *ts,
 		if (ts->tick_stopped && ktime_equal(expires, dev->next_event))
 			goto out;
 
-		ret = expires;
-
-		/*
-		 * nohz_stop_sched_tick can be called several times before
-		 * the nohz_restart_sched_tick is called. This happens when
-		 * interrupts arrive which do not cause a reschedule. In the
-		 * first call we save the current tick time, so we can restart
-		 * the scheduler tick in nohz_restart_sched_tick.
-		 */
-		if (!ts->tick_stopped) {
-			nohz_balance_enter_idle(cpu);
-			calc_load_enter_idle();
+	/*
+	 * nohz_stop_sched_tick can be called several times before
+	 * the nohz_restart_sched_tick is called. This happens when
+	 * interrupts arrive which do not cause a reschedule. In the
+	 * first call we save the current tick time, so we can restart
+	 * the scheduler tick in nohz_restart_sched_tick.
+	 */
+	if (!ts->tick_stopped) {
+		nohz_balance_enter_idle(cpu);
+		calc_load_enter_idle();
+		quiet_vmstat();
 
 			ts->last_tick = hrtimer_get_expires(&ts->sched_timer);
 			ts->tick_stopped = 1;
