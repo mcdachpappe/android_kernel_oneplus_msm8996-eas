@@ -301,9 +301,7 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 
 # HolyDragon Optimization Flags #
 
-GRAPHITE = -fgraphite -fgraphite-identity -floop-interchange -ftree-loop-distribution -floop-strip-mine -floop-block -ftree-loop-linear
-
-# Extra GCC Optimizations	  
+# Specific GCC Optimizations	  
 EXTRA_OPTS := \
 	-falign-loops=1 -falign-functions=1 -falign-labels=1 -falign-jumps=1 \
 	-fira-hoist-pressure -fira-loop-pressure -fno-inline-small-functions \
@@ -312,7 +310,7 @@ EXTRA_OPTS := \
 	-fvect-cost-model=cheap -fsimd-cost-model=cheap \
 	-ftree-partial-pre -fno-gcse
 
-# Arm Architecture Specific
+# Arm64 Architecture Specific GCC Flags
 # fall back to -march=armv8-a in case the compiler isn't compatible
 # with -mcpu and -mtune
 ARM_ARCH_OPT := \
@@ -324,33 +322,21 @@ ARM_ARCH_OPT := \
 CLANG_ARCH_OPT := \
 	-march=armv8-a -mcpu=kryo
 
+# Optional Flags
 GEN_OPT_FLAGS := \
  -DNDEBUG -g0 -pipe \
  -fomit-frame-pointer 
 
-LTO_FLAGS := -flto -fuse-linker-plugin -fuse-ld=qcld
-
-POLLY_FLAGS := -mllvm -polly \
-	-mllvm -polly-parallel \
-	-mllvm -polly-run-dce \
-	-mllvm -polly-run-inliner \
-	-mllvm -polly-opt-fusion=max \
-	-mllvm -polly-ast-use-context \
-	-mllvm -polly-detect-keep-going \
-	-mllvm -polly-vectorizer=stripmine \
-	-mllvm -enable-select-to-intrinsics
-
-OPT_FLAGS := -O3 \
-	-march=armv8-a+crypto -mcpu=cortex-a53+crypto -mfpu=crypto-neon-fp-armv8 \
-	$(POLLY_FLAGS)
-
+#Targetting Options
 LTO_TRIPLE = $(HDK_TC)lto-	
 LLVM_TRIPLE = $(HDK_TC)llvm-
 CLANG_TRIPLE = $(HDK_TC)clang $(CLANG_ARCH_OPT) -mfloat-abi=hard -mfpu=crypto-neon-fp-armv8 --sysroot=$(CROSS_COMPILE)
 CPP_TRIPLE = $(HDK_TC)clang++ $(CLANG_ARCH_OPT) -mfloat-abi=hard -mfpu=crypto-neon-fp-armv8 -Ofast --sysroot=$(CROSS_COMPILE)
 
+#Clang specific compatibility
 CLANG_IA_FLAG += -no-integrated-as
-CLANG_FLAGS := $(CLANG_TRIPLE) $(CLANG_IA_FLAG) $(OPT_FLAGS)
+
+#########
 
 HOSTCC       = gcc
 HOSTCXX      = g++
