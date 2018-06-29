@@ -250,6 +250,7 @@ SUBARCH := $(shell uname -m | sed -e s/i.86/x86/ -e s/x86_64/x86/ \
 # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
 ARCH		?= $(SUBARCH)
 CROSS_COMPILE	?= $(CONFIG_CROSS_COMPILE:"%"=%)
+HDK		:= /home/holyangel/android/Toolchains/sdclang-lin6.4.2/
 HDK_TC		:= /home/holyangel/android/Toolchains/sdclang-lin6.4.2/bin/
 ARCH		:= arm64
 SUBARCH		:= arm64
@@ -330,8 +331,8 @@ GEN_OPT_FLAGS := \
 #Targetting Options
 LTO_TRIPLE = $(HDK_TC)lto-	
 LLVM_TRIPLE = $(HDK_TC)llvm-
-CLANG_TRIPLE = $(HDK_TC)clang $(CLANG_ARCH_OPT) -mfloat-abi=hard -mfpu=crypto-neon-fp-armv8 --sysroot=$(CROSS_COMPILE)
-CPP_TRIPLE = $(HDK_TC)clang++ $(CLANG_ARCH_OPT) -mfloat-abi=hard -mfpu=crypto-neon-fp-armv8 -Ofast --sysroot=$(CROSS_COMPILE)
+CLANG_TRIPLE = $(HDK_TC)clang $(CLANG_ARCH_OPT) -mfloat-abi=hard -mfpu=crypto-neon-fp-armv8 --sysroot=$(HDK) --gcc-toolchain=$(CROSS_COMPILE)gcc
+CPP_TRIPLE = $(HDK_TC)clang++ $(CLANG_ARCH_OPT) -mfloat-abi=hard -mfpu=crypto-neon-fp-armv8 -Ofast --sysroot=$(HDK) --gcc-toolchain=$(CROSS_COMPILE)gcc
 
 #Clang specific compatibility
 CLANG_IA_FLAG += -no-integrated-as
