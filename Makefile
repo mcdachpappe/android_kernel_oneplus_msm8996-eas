@@ -320,7 +320,10 @@ ARM_ARCH_OPT := \
 	-mtune=cortex-a57 -mcpu=cortex-a57+crc+crypto+fp+simd \
 	--param l1-cache-line-size=64 --param l1-cache-size=32 --param l2-cache-size=512 
 
-# Optional
+# Arm64 Architecture Specific Clang Flags
+CLANG_ARCH_OPT := \
+	-march=armv8-a -mcpu=kryo
+
 GEN_OPT_FLAGS := \
  -DNDEBUG -g0 -pipe \
  -fomit-frame-pointer 
@@ -343,8 +346,8 @@ OPT_FLAGS := -O3 \
 
 LTO_TRIPLE = $(HDK_TC)lto-	
 LLVM_TRIPLE = $(HDK_TC)llvm-
-CLANG_TRIPLE = $(HDK_TC)clang
-CPP_TRIPLE = $(HDK_TC)clang++
+CLANG_TRIPLE = $(HDK_TC)clang $(CLANG_ARCH_OPT) -mfloat-abi=hard -mfpu=crypto-neon-fp-armv8 --sysroot=$(CROSS_COMPILE)
+CPP_TRIPLE = $(HDK_TC)clang++ $(CLANG_ARCH_OPT) -mfloat-abi=hard -mfpu=crypto-neon-fp-armv8 -Ofast --sysroot=$(CROSS_COMPILE)
 
 CLANG_IA_FLAG += -no-integrated-as
 CLANG_FLAGS := $(CLANG_TRIPLE) $(CLANG_IA_FLAG) $(OPT_FLAGS)
