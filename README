@@ -7,9 +7,9 @@ git clone https://github.com/holyangel/OP3.git -b omni msm8996
 You will need to edit line 253 of Makefile to point to where this source is.
 
 I am using my own toolchain which is a conglomeration of 
-Snapdragon llvm clang 4.0.2 and my own custom build of GCC-5.5.
+Snapdragon llvm clang 6.0.2 and my own custom build of Linaro-6.4.
 To sync Toolchain: 
-git clone https://gitlab.com/HolyDragonProject/android_vendor_qcom_sdclang.git -b HDTC-lin6.4 sdclang-lin6.4
+git clone https://gitlab.com/HolyDragonProject/android_vendor_qcom_sdclang.git -b HDTC-lin6.4.2 sdclang-lin6.4.2
 
 You will need to edit line 256 of Makefile to point to where this toolchain is.
 
