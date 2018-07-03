@@ -321,18 +321,21 @@ ARM_ARCH_OPT := \
 
 # Arm64 Architecture Specific Clang Flags
 CLANG_ARCH_OPT := \
-	-march=armv8-a -mcpu=kryo
+	-march=armv8-a -mcpu=kryo -mfloat-abi=hard -mfpu=crypto-neon-fp-armv8
 
 # Optional Flags
 GEN_OPT_FLAGS := \
  -DNDEBUG -g0 -pipe \
  -fomit-frame-pointer 
 
+LLVM_FLAGS := \
+ -mllvm -polly -mllvm -polly-vectorizer=neonv8
+
 #Targetting Options
 LTO_TRIPLE = $(HDK_TC)lto-	
 LLVM_TRIPLE = $(HDK_TC)llvm-
-CLANG_TRIPLE = $(HDK_TC)clang $(CLANG_ARCH_OPT) -mfloat-abi=hard -mfpu=crypto-neon-fp-armv8 --sysroot=$(HDK) --gcc-toolchain=$(CROSS_COMPILE)gcc
-CPP_TRIPLE = $(HDK_TC)clang++ $(CLANG_ARCH_OPT) -mfloat-abi=hard -mfpu=crypto-neon-fp-armv8 -Ofast --sysroot=$(HDK) --gcc-toolchain=$(CROSS_COMPILE)gcc
+CLANG_TRIPLE = $(HDK_TC)clang $(CLANG_ARCH_OPT) $(LLVM_FLAGS) --sysroot=$(HDK) --gcc-toolchain=$(CROSS_COMPILE)gcc
+CPP_TRIPLE = $(HDK_TC)clang++ $(CLANG_ARCH_OPT) $(LLVM_FLAGS) -Ofast --sysroot=$(HDK) --gcc-toolchain=$(CROSS_COMPILE)gcc
 
 #Clang specific compatibility
 CLANG_IA_FLAG += -no-integrated-as
@@ -397,14 +400,14 @@ include $(srctree)/scripts/Kbuild.include
 
 # Make variables (CC, etc...)
 AS		= $(CROSS_COMPILE)as
-LD		= $(HDK_TC)ld.lld -m aarch64linux --strip-debug --lto-O3
+LD		= $(HDK_TC)ld.lld -m aarch64linux --strip-debug --lto-O3 
 CC		= $(CROSS_COMPILE)gcc -g0
 CPP		= $(CPP_TRIPLE) -E -flto
 AR		= $(LLVM_TRIPLE)ar
 NM		= $(CROSS_COMPILE)nm
 STRIP		= $(CROSS_COMPILE)strip
 OBJCOPY		= $(CROSS_COMPILE)objcopy -g --strip-debug
-OBJDUMP		= $(LLVM_TRIPLE)objdump $(CLANG_ARCH_OPT)
+OBJDUMP		= $(LLVM_TRIPLE)objdump -arch=armv8-a -mcpu=kryo
 AWK		= awk
 GENKSYMS	= scripts/genksyms/genksyms
 INSTALLKERNEL  := installkernel
