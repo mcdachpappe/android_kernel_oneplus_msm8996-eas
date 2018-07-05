@@ -329,7 +329,8 @@ GEN_OPT_FLAGS := \
  -fomit-frame-pointer 
 
 LLVM_FLAGS := \
- -mllvm -polly -mllvm -polly-vectorizer=neonv8
+ -mllvm -polly -mllvm -polly-vectorizer=neonv8 -mllvm -polly-process-unprofitable -mllvm -polly-tiling \
+ -mllvm -polly-optimized-scops
 
 #Targetting Options
 LTO_TRIPLE = $(HDK_TC)lto-	
