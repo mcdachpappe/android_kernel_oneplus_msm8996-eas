@@ -335,8 +335,8 @@ LLVM_FLAGS := \
 #Targetting Options
 LTO_TRIPLE = $(HDK_TC)lto-	
 LLVM_TRIPLE = $(HDK_TC)llvm-
-CLANG_TRIPLE = $(HDK_TC)clang $(CLANG_ARCH_OPT) $(LLVM_FLAGS) --sysroot=$(HDK) --gcc-toolchain=$(CROSS_COMPILE)gcc
-CPP_TRIPLE = $(HDK_TC)clang++ $(CLANG_ARCH_OPT) $(LLVM_FLAGS) -Ofast --sysroot=$(HDK) --gcc-toolchain=$(CROSS_COMPILE)gcc
+CLANG_TRIPLE = $(HDK_TC)clang $(CLANG_ARCH_OPT) $(LLVM_FLAGS) -flto --sysroot=$(HDK) --gcc-toolchain=$(CROSS_COMPILE)gcc
+CPP_TRIPLE = $(HDK_TC)clang++ $(CLANG_ARCH_OPT) $(LLVM_FLAGS) -Ofast -flto --sysroot=$(HDK) --gcc-toolchain=$(CROSS_COMPILE)gcc
 
 #Clang specific compatibility
 CLANG_IA_FLAG += -no-integrated-as
