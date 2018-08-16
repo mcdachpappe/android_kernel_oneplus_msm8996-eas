@@ -1,7 +1,7 @@
 VERSION = 3
 PATCHLEVEL = 18
 SUBLEVEL = 118
-EXTRAVERSION = -HolyDragon-v0.1.2.5
+EXTRAVERSION = -HolyDragon-v0.1.3
 NAME = Chrysophylax
 
 # *DOCUMENTATION*
