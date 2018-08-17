@@ -1,8 +1,8 @@
 VERSION = 3
 PATCHLEVEL = 18
-SUBLEVEL = 118
+SUBLEVEL = 119
 EXTRAVERSION = -HolyDragon-v0.1.3
-NAME = Chrysophylax
+NAME = Fafnir
 
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
