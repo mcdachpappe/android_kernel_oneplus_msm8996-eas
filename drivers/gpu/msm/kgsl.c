@@ -3502,7 +3502,10 @@ static unsigned long _search_range(struct kgsl_process_private *private,
 		}
 
 		/* Check that_gpu_find_svm doesn't put us in a loop */
-		BUG_ON(gpu >= cpu);
+		if (gpu >= cpu) {
+			result = -ENOMEM;
+			break;
+		}
 
 		/* Break if the recommended GPU address is out of range */
 		if (gpu < start) {
