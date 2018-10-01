@@ -2066,7 +2066,7 @@ static inline int hdd_send_roam_auth_event(hdd_context_t *hdd_ctx,
  * Return: none
  */
 #if defined CFG80211_ROAMED_API_UNIFIED || \
-       (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 9, 0))
+       (LINUX_VERSION_CODE >= KERNEL_VERSION(4, 12, 0))
 static void hdd_send_roamed_ind(struct net_device *dev,
 				struct cfg80211_bss *bss, const uint8_t *req_ie,
 				size_t req_ie_len, const uint8_t *resp_ie,
@@ -2461,6 +2461,20 @@ static eHalStatus hdd_AssociationCompletionHandler( hdd_adapter_t *pAdapter, tCs
 #endif
 #ifdef FEATURE_WLAN_AUTO_SHUTDOWN
         wlan_hdd_auto_shutdown_enable(pHddCtx, VOS_FALSE);
+#endif
+#ifdef FEATURE_WLAN_DISABLE_CHANNEL_SWITCH
+        if (!vos_is_chan_ok_for_dnbs(pHddStaCtx->conn_info.operationChannel)) {
+            hddLog(VOS_TRACE_LEVEL_ERROR,
+                          "%s: chan-%d is not suitable for DNBS", __func__, pHddStaCtx->conn_info.operationChannel);
+            wlan_hdd_netif_queue_control(pAdapter, WLAN_NETIF_CARRIER_OFF, WLAN_CONTROL_PATH);
+            if (!hddDisconInProgress) {
+                hddLog(VOS_TRACE_LEVEL_ERROR, "%s: Disconnecting...", __func__);
+                sme_RoamDisconnect(WLAN_HDD_GET_HAL_CTX(pAdapter),
+                                    pAdapter->sessionId,
+                                    eCSR_DISCONNECT_REASON_UNSPECIFIED);
+            }
+            return eHAL_STATUS_FAILURE;
+        }
 #endif
         /* validate cfg_ini */
         if (!pHddCtx->cfg_ini) {
@@ -5163,8 +5177,8 @@ static tANI_S32 hdd_ProcessGENIE(hdd_adapter_t *pAdapter,
 {
     tHalHandle halHandle = WLAN_HDD_GET_HAL_CTX(pAdapter);
     eHalStatus result;
-    tDot11fIERSN dot11RSNIE;
-    tDot11fIEWPA dot11WPAIE;
+    tDot11fIERSN dot11RSNIE = {0};
+    tDot11fIEWPA dot11WPAIE = {0};
     tANI_U32 i;
     tANI_U32 status;
     tANI_U8 *pRsnIe;
@@ -5193,10 +5207,10 @@ static tANI_S32 hdd_ProcessGENIE(hdd_adapter_t *pAdapter,
         pRsnIe = gen_ie + 2;
         RSNIeLen = gen_ie_len - 2;
         // Unpack the RSN IE
-        status = dot11fUnpackIeRSN((tpAniSirGlobal) halHandle,
-                            pRsnIe,
-                            RSNIeLen,
-                            &dot11RSNIE);
+        status = sme_unpack_rsn_ie(halHandle,
+                                   pRsnIe,
+                                   RSNIeLen,
+                                   &dot11RSNIE);
         if (DOT11F_FAILED(status))
         {
             hddLog(LOGE,
@@ -5204,16 +5218,19 @@ static tANI_S32 hdd_ProcessGENIE(hdd_adapter_t *pAdapter,
                        status);
             return -EINVAL;
         }
+        hddLog(LOG1, FL("%s: gp_cipher_suite_present: %d"),
+                __func__, dot11RSNIE.gp_cipher_suite_present);
+
         // Copy out the encryption and authentication types
         hddLog(LOG1, FL("%s: pairwise cipher suite count: %d"),
                 __func__, dot11RSNIE.pwise_cipher_suite_count );
         hddLog(LOG1, FL("%s: authentication suite count: %d"),
-                __func__, dot11RSNIE.akm_suite_count);
+                __func__, dot11RSNIE.akm_suite_cnt);
         /*Here we have followed the apple base code,
           but probably I suspect we can do something different*/
         //dot11RSNIE.akm_suite_count
         // Just translate the FIRST one
-        *pAuthType =  hdd_TranslateRSNToCsrAuthType(dot11RSNIE.akm_suites[0]);
+        *pAuthType =  hdd_TranslateRSNToCsrAuthType(dot11RSNIE.akm_suite[0]);
         //dot11RSNIE.pwise_cipher_suite_count
         *pEncryptType = hdd_TranslateRSNToCsrEncryptionType(dot11RSNIE.pwise_cipher_suites[0]);
         //dot11RSNIE.gp_cipher_suite_count
@@ -5270,10 +5287,19 @@ static tANI_S32 hdd_ProcessGENIE(hdd_adapter_t *pAdapter,
         pRsnIe = gen_ie + 2 + 4;
         RSNIeLen = gen_ie_len - (2 + 4);
         // Unpack the WPA IE
-        dot11fUnpackIeWPA((tpAniSirGlobal) halHandle,
+        status = dot11fUnpackIeWPA((tpAniSirGlobal) halHandle,
                             pRsnIe,
                             RSNIeLen,
                             &dot11WPAIE);
+
+        if (DOT11F_FAILED(status))
+        {
+            hddLog(LOGE,
+                   FL("Parse failure in hdd_ProcessGENIE (0x%08x)"),
+                   status);
+            return -EINVAL;
+        }
+
         // Copy out the encryption and authentication types
         hddLog(LOG1, FL("%s: WPA unicast cipher suite count: %d"),
                __func__, dot11WPAIE.unicast_cipher_count );
@@ -5364,7 +5390,7 @@ int hdd_SetGENIEToCsr( hdd_adapter_t *pAdapter, eCsrAuthType *RSNAuthType)
           FL("CSR AuthType = %d, EncryptionType = %d mcEncryptionType = %d"),
            *RSNAuthType, RSNEncryptType, mcRSNEncryptType);
     }
-    return 0;
+    return status;
 }
 
 #ifdef WLAN_FEATURE_FILS_SK
@@ -6318,4 +6344,47 @@ int iw_get_ap_address(struct net_device *dev, struct iw_request_info *info,
 	vos_ssr_unprotect(__func__);
 
 	return ret;
+}
+
+hdd_adapter_t *hdd_get_sta_connection_in_progress(hdd_context_t *hdd_ctx)
+{
+	hdd_adapter_list_node_t *adapter_node = NULL, *next = NULL;
+	hdd_adapter_t *adapter = NULL;
+	VOS_STATUS status;
+	hdd_station_ctx_t *hdd_sta_ctx;
+
+	if (!hdd_ctx) {
+		hddLog(LOGE, FL("HDD context is NULL"));
+		return NULL;
+	}
+
+	status = hdd_get_front_adapter(hdd_ctx, &adapter_node);
+	while (NULL != adapter_node && VOS_STATUS_SUCCESS == status) {
+		adapter = adapter_node->pAdapter;
+		if (!adapter)
+			goto end;
+
+		hdd_sta_ctx = WLAN_HDD_GET_STATION_CTX_PTR(adapter);
+		if ((WLAN_HDD_INFRA_STATION == adapter->device_mode) ||
+		    (WLAN_HDD_P2P_CLIENT == adapter->device_mode) ||
+		    (WLAN_HDD_P2P_DEVICE == adapter->device_mode)) {
+			if (eConnectionState_Connecting ==
+			    hdd_sta_ctx->conn_info.connState) {
+				hddLog(LOG1, FL("session_id %d: Connection is in progress"),
+				       adapter->sessionId);
+				return adapter;
+			} else if ((eConnectionState_Associated ==
+				   hdd_sta_ctx->conn_info.connState) &&
+				   sme_is_sta_key_exchange_in_progress(
+				   hdd_ctx->hHal, adapter->sessionId)) {
+				hddLog(LOG1, FL("session_id %d: Key exchange is in progress"),
+				       adapter->sessionId);
+				return adapter;
+			}
+		}
+end:
+		status = hdd_get_next_adapter(hdd_ctx, adapter_node, &next);
+		adapter_node = next;
+	}
+	return NULL;
 }
