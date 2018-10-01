@@ -521,12 +521,18 @@ int __hdd_hard_start_xmit(struct sk_buff *skb, struct net_device *dev)
      // }
 #endif
 #else
+#ifdef WLAN_FEATURE_TSF_PLUS
       /*
        * For PTP feature enabled system, need to orphan the socket buffer asap
        * otherwise the latency will become unacceptable
        */
       if (hdd_cfg_is_ptp_opt_enable(hddCtxt))
           skb_orphan(skb);
+#else
+#if (LINUX_VERSION_CODE > KERNEL_VERSION(3,19,0))
+          skb_orphan(skb);
+#endif
+#endif
 #endif
 
        /* use self peer directly in monitor mode */
@@ -1260,8 +1266,9 @@ VOS_STATUS hdd_mon_rx_packet_cbk(v_VOID_t *vos_ctx, adf_nbuf_t rx_buf,
 		skb = skb_next;
 	}
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,11,0))
 	adapter->dev->last_rx = jiffies;
-
+#endif
 	return VOS_STATUS_SUCCESS;
 }
 
@@ -1318,8 +1325,9 @@ VOS_STATUS hdd_vir_mon_rx_cbk(v_VOID_t *vos_ctx, adf_nbuf_t rx_buf,
 		skb = skb_next;
 	}
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,11,0))
 	adapter->dev->last_rx = jiffies;
-
+#endif
 	return VOS_STATUS_SUCCESS;
 }
 
@@ -1566,8 +1574,9 @@ VOS_STATUS hdd_rx_packet_cbk(v_VOID_t *vosContext,
       skb = skb_next;
    }
 
+#if (LINUX_VERSION_CODE < KERNEL_VERSION(4,11,0))
    pAdapter->dev->last_rx = jiffies;
-
+#endif
    return VOS_STATUS_SUCCESS;
 }
 
