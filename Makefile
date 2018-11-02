@@ -308,7 +308,7 @@ EXTRA_OPTS := \
 	-fsched-pressure -fsched-spec-load -ftree-vectorize \
 	-fno-guess-branch-probability -fpredictive-commoning \
 	-fvect-cost-model=cheap -fsimd-cost-model=cheap \
-	-ftree-partial-pre -fno-gcse
+	-ftree-partial-pre -fno-gcse -fno-schedule-insns
 
 # Arm64 Architecture Specific GCC Flags
 # fall back to -march=armv8-a in case the compiler isn't compatible
