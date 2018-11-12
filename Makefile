@@ -395,7 +395,7 @@ include $(srctree)/scripts/Kbuild.include
 
 # Make variables (CC, etc...)
 AS		= $(CROSS_COMPILE)as
-LD		= $(HDK_TC)ld.lld -m aarch64linux --strip-debug --lto-O3
+LD		= $(CROSS_COMPILE)ld --strip-debug
 CC		= $(CROSS_COMPILE)gcc -g0
 CPP		= $(CPP_TRIPLE) -E -flto
 AR		= $(LLVM_TRIPLE)ar
