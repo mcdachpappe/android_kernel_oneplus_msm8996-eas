@@ -75,7 +75,7 @@ static int qpnp_read_wrapper(struct qpnp_rtc *rtc_dd, u8 *rtc_val,
 	rc = spmi_ext_register_readl(spmi->ctrl, spmi->sid, base, rtc_val,
 					count);
 	if (rc) {
-		dev_err(rtc_dd->rtc_dev, "SPMI read failed\n");
+		dev_dbg(rtc_dd->rtc_dev, "SPMI read failed\n");
 		return rc;
 	}
 	return 0;
@@ -90,7 +90,7 @@ static int qpnp_write_wrapper(struct qpnp_rtc *rtc_dd, u8 *rtc_val,
 	rc = spmi_ext_register_writel(spmi->ctrl, spmi->sid, base, rtc_val,
 					count);
 	if (rc) {
-		dev_err(rtc_dd->rtc_dev, "SPMI write failed\n");
+		dev_dbg(rtc_dd->rtc_dev, "SPMI write failed\n");
 		return rc;
 	}
 
@@ -124,7 +124,7 @@ qpnp_rtc_set_time(struct device *dev, struct rtc_time *tm)
 		rc = qpnp_write_wrapper(rtc_dd, &ctrl_reg,
 			rtc_dd->alarm_base + REG_OFFSET_ALARM_CTRL1, 1);
 		if (rc) {
-			dev_err(dev, "Write to ALARM ctrl reg failed\n");
+			dev_dbg(dev, "Write to ALARM ctrl reg failed\n");
 			goto rtc_rw_fail;
 		}
 	} else
@@ -162,7 +162,7 @@ qpnp_rtc_set_time(struct device *dev, struct rtc_time *tm)
 		rc = qpnp_write_wrapper(rtc_dd, &rtc_ctrl_reg,
 				rtc_dd->rtc_base + REG_OFFSET_RTC_CTRL, 1);
 		if (rc) {
-			dev_err(dev,
+			dev_dbg(dev,
 				"Disabling of RTC control reg failed"
 					" with error:%d\n", rc);
 			goto rtc_rw_fail;
@@ -175,7 +175,7 @@ qpnp_rtc_set_time(struct device *dev, struct rtc_time *tm)
 	rc = qpnp_write_wrapper(rtc_dd, &reg,
 				rtc_dd->rtc_base + REG_OFFSET_RTC_WRITE, 1);
 	if (rc) {
-		dev_err(dev, "Write to RTC reg failed\n");
+		dev_dbg(dev, "Write to RTC reg failed\n");
 		goto rtc_rw_fail;
 	}
 
@@ -183,7 +183,7 @@ qpnp_rtc_set_time(struct device *dev, struct rtc_time *tm)
 	rc = qpnp_write_wrapper(rtc_dd, &value[1],
 			rtc_dd->rtc_base + REG_OFFSET_RTC_WRITE + 1, 3);
 	if (rc) {
-		dev_err(dev, "Write to RTC reg failed\n");
+		dev_dbg(dev, "Write to RTC reg failed\n");
 		goto rtc_rw_fail;
 	}
 
@@ -191,7 +191,7 @@ qpnp_rtc_set_time(struct device *dev, struct rtc_time *tm)
 	rc = qpnp_write_wrapper(rtc_dd, value,
 				rtc_dd->rtc_base + REG_OFFSET_RTC_WRITE, 1);
 	if (rc) {
-		dev_err(dev, "Write to RTC reg failed\n");
+		dev_dbg(dev, "Write to RTC reg failed\n");
 		goto rtc_rw_fail;
 	}
 
@@ -201,7 +201,7 @@ qpnp_rtc_set_time(struct device *dev, struct rtc_time *tm)
 		rc = qpnp_write_wrapper(rtc_dd, &rtc_ctrl_reg,
 				rtc_dd->rtc_base + REG_OFFSET_RTC_CTRL, 1);
 		if (rc) {
-			dev_err(dev,
+			dev_dbg(dev,
 				"Enabling of RTC control reg failed"
 					" with error:%d\n", rc);
 			goto rtc_rw_fail;
@@ -214,7 +214,7 @@ qpnp_rtc_set_time(struct device *dev, struct rtc_time *tm)
 		rc = qpnp_write_wrapper(rtc_dd, &ctrl_reg,
 			rtc_dd->alarm_base + REG_OFFSET_ALARM_CTRL1, 1);
 		if (rc) {
-			dev_err(dev, "Write to ALARM ctrl reg failed\n");
+			dev_dbg(dev, "Write to ALARM ctrl reg failed\n");
 			goto rtc_rw_fail;
 		}
 	}
@@ -240,7 +240,7 @@ qpnp_rtc_read_time(struct device *dev, struct rtc_time *tm)
 				rtc_dd->rtc_base + REG_OFFSET_RTC_READ,
 				NUM_8_BIT_RTC_REGS);
 	if (rc) {
-		dev_err(dev, "Read from RTC reg failed\n");
+		dev_dbg(dev, "Read from RTC reg failed\n");
 		return rc;
 	}
 
@@ -251,7 +251,7 @@ qpnp_rtc_read_time(struct device *dev, struct rtc_time *tm)
 	rc = qpnp_read_wrapper(rtc_dd, &reg,
 				rtc_dd->rtc_base + REG_OFFSET_RTC_READ, 1);
 	if (rc) {
-		dev_err(dev, "Read from RTC reg failed\n");
+		dev_dbg(dev, "Read from RTC reg failed\n");
 		return rc;
 	}
 
@@ -260,7 +260,7 @@ qpnp_rtc_read_time(struct device *dev, struct rtc_time *tm)
 				rtc_dd->rtc_base + REG_OFFSET_RTC_READ,
 				NUM_8_BIT_RTC_REGS);
 		if (rc) {
-			dev_err(dev, "Read from RTC reg failed\n");
+			dev_dbg(dev, "Read from RTC reg failed\n");
 			return rc;
 		}
 	}
@@ -271,7 +271,7 @@ qpnp_rtc_read_time(struct device *dev, struct rtc_time *tm)
 
 	rc = rtc_valid_tm(tm);
 	if (rc) {
-		dev_err(dev, "Invalid time read from RTC\n");
+		dev_dbg(dev, "Invalid time read from RTC\n");
 		return rc;
 	}
 
@@ -299,13 +299,13 @@ qpnp_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
 	 */
 	rc = qpnp_rtc_read_time(dev, &rtc_tm);
 	if (rc) {
-		dev_err(dev, "Unable to read RTC time\n");
+		dev_dbg(dev, "Unable to read RTC time\n");
 		return -EINVAL;
 	}
 
 	rtc_tm_to_time(&rtc_tm, &secs_rtc);
 	if (secs < secs_rtc) {
-		dev_err(dev, "Trying to set alarm in the past\n");
+		dev_dbg(dev, "Trying to set alarm in the past\n");
 		return -EINVAL;
 	}
 
@@ -320,7 +320,7 @@ qpnp_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
 				rtc_dd->alarm_base + REG_OFFSET_ALARM_RW,
 				NUM_8_BIT_RTC_REGS);
 	if (rc) {
-		dev_err(dev, "Write to ALARM reg failed\n");
+		dev_dbg(dev, "Write to ALARM reg failed\n");
 		goto rtc_rw_fail;
 	}
 
@@ -331,7 +331,7 @@ qpnp_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
 	rc = qpnp_write_wrapper(rtc_dd, &ctrl_reg,
 			rtc_dd->alarm_base + REG_OFFSET_ALARM_CTRL1, 1);
 	if (rc) {
-		dev_err(dev, "Write to ALARM cntrol reg failed\n");
+		dev_dbg(dev, "Write to ALARM cntrol reg failed\n");
 		goto rtc_rw_fail;
 	}
 
@@ -358,7 +358,7 @@ qpnp_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alarm)
 				rtc_dd->alarm_base + REG_OFFSET_ALARM_RW,
 				NUM_8_BIT_RTC_REGS);
 	if (rc) {
-		dev_err(dev, "Read from ALARM reg failed\n");
+		dev_dbg(dev, "Read from ALARM reg failed\n");
 		return rc;
 	}
 
@@ -367,7 +367,7 @@ qpnp_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alarm)
 
 	rc = rtc_valid_tm(&alarm->time);
 	if (rc) {
-		dev_err(dev, "Invalid time read from RTC\n");
+		dev_dbg(dev, "Invalid time read from RTC\n");
 		return rc;
 	}
 
@@ -379,7 +379,7 @@ qpnp_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alarm)
 	rc = qpnp_read_wrapper(rtc_dd, value,
 		rtc_dd->alarm_base + REG_OFFSET_ALARM_CTRL1, 1);
 	if (rc) {
-		dev_err(dev, "Read from ALARM CTRL1 failed\n");
+		dev_dbg(dev, "Read from ALARM CTRL1 failed\n");
 		return rc;
 	}
 
@@ -402,11 +402,10 @@ qpnp_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
 	ctrl_reg = rtc_dd->alarm_ctrl_reg1;
 	ctrl_reg = enabled ? (ctrl_reg | BIT_RTC_ALARM_ENABLE) :
 				(ctrl_reg & ~BIT_RTC_ALARM_ENABLE);
-
 	rc = qpnp_write_wrapper(rtc_dd, &ctrl_reg,
 			rtc_dd->alarm_base + REG_OFFSET_ALARM_CTRL1, 1);
 	if (rc) {
-		dev_err(dev, "Write to ALARM control reg failed\n");
+		dev_dbg(dev, "Write to ALARM control reg failed\n");
 		goto rtc_rw_fail;
 	}
 
@@ -418,7 +417,7 @@ qpnp_rtc_alarm_irq_enable(struct device *dev, unsigned int enabled)
 			rtc_dd->alarm_base + REG_OFFSET_ALARM_RW,
 			NUM_8_BIT_RTC_REGS);
 		if (rc)
-			dev_err(dev, "Clear ALARM value reg failed\n");
+			dev_dbg(dev, "Clear ALARM value reg failed\n");
 	}
 
 rtc_rw_fail:
@@ -452,7 +451,7 @@ static irqreturn_t qpnp_alarm_trigger(int irq, void *dev_id)
 			rtc_dd->alarm_base + REG_OFFSET_ALARM_CTRL1, 1);
 	if (rc) {
 		spin_unlock_irqrestore(&rtc_dd->alarm_ctrl_lock, irq_flags);
-		dev_err(rtc_dd->rtc_dev,
+		dev_dbg(rtc_dd->rtc_dev,
 				"Write to ALARM control reg failed\n");
 		goto rtc_alarm_handled;
 	}
@@ -465,7 +464,7 @@ static irqreturn_t qpnp_alarm_trigger(int irq, void *dev_id)
 	rc = qpnp_write_wrapper(rtc_dd, &ctrl_reg,
 			rtc_dd->alarm_base + REG_OFFSET_ALARM_CTRL2, 1);
 	if (rc)
-		dev_err(rtc_dd->rtc_dev,
+		dev_dbg(rtc_dd->rtc_dev,
 				"Write to ALARM control reg failed\n");
 
 rtc_alarm_handled:
@@ -482,7 +481,7 @@ static int qpnp_rtc_probe(struct spmi_device *spmi)
 
 	rtc_dd = devm_kzalloc(&spmi->dev, sizeof(*rtc_dd), GFP_KERNEL);
 	if (rtc_dd == NULL) {
-		dev_err(&spmi->dev, "Unable to allocate memory!\n");
+		dev_dbg(&spmi->dev, "Unable to allocate memory!\n");
 		return -ENOMEM;
 	}
 
@@ -490,7 +489,7 @@ static int qpnp_rtc_probe(struct spmi_device *spmi)
 	rc = of_property_read_u32(spmi->dev.of_node, "qcom,qpnp-rtc-write",
 						&rtc_dd->rtc_write_enable);
 	if (rc && rc != -EINVAL) {
-		dev_err(&spmi->dev,
+		dev_dbg(&spmi->dev,
 			"Error reading rtc_write_enable property %d\n", rc);
 		return rc;
 	}
@@ -499,7 +498,7 @@ static int qpnp_rtc_probe(struct spmi_device *spmi)
 						"qcom,qpnp-rtc-alarm-pwrup",
 						&rtc_dd->rtc_alarm_powerup);
 	if (rc && rc != -EINVAL) {
-		dev_err(&spmi->dev,
+		dev_dbg(&spmi->dev,
 			"Error reading rtc_alarm_powerup property %d\n", rc);
 		return rc;
 	}
@@ -513,7 +512,7 @@ static int qpnp_rtc_probe(struct spmi_device *spmi)
 	/* Get RTC/ALARM resources */
 	spmi_for_each_container_dev(spmi_resource, spmi) {
 		if (!spmi_resource) {
-			dev_err(&spmi->dev,
+			dev_dbg(&spmi->dev,
 				"%s: rtc_alarm: spmi resource absent!\n",
 				__func__);
 			rc = -ENXIO;
@@ -523,7 +522,7 @@ static int qpnp_rtc_probe(struct spmi_device *spmi)
 		resource = spmi_get_resource(spmi, spmi_resource,
 							IORESOURCE_MEM, 0);
 		if (!(resource && resource->start)) {
-			dev_err(&spmi->dev,
+			dev_dbg(&spmi->dev,
 				"%s: node %s IO resource absent!\n",
 				__func__, spmi->dev.of_node->full_name);
 			rc = -ENXIO;
@@ -533,7 +532,7 @@ static int qpnp_rtc_probe(struct spmi_device *spmi)
 		rc = qpnp_read_wrapper(rtc_dd, &subtype,
 				resource->start + REG_OFFSET_PERP_SUBTYPE, 1);
 		if (rc) {
-			dev_err(&spmi->dev,
+			dev_dbg(&spmi->dev,
 				"Peripheral subtype read failed\n");
 			goto fail_rtc_enable;
 		}
@@ -547,13 +546,13 @@ static int qpnp_rtc_probe(struct spmi_device *spmi)
 			rtc_dd->rtc_alarm_irq =
 				spmi_get_irq(spmi, spmi_resource, 0);
 			if (rtc_dd->rtc_alarm_irq < 0) {
-				dev_err(&spmi->dev, "ALARM IRQ absent\n");
+				dev_dbg(&spmi->dev, "ALARM IRQ absent\n");
 				rc = -ENXIO;
 				goto fail_rtc_enable;
 			}
 			break;
 		default:
-			dev_err(&spmi->dev, "Invalid peripheral subtype\n");
+			dev_dbg(&spmi->dev, "Invalid peripheral subtype\n");
 			rc = -EINVAL;
 			goto fail_rtc_enable;
 		}
@@ -562,13 +561,13 @@ static int qpnp_rtc_probe(struct spmi_device *spmi)
 	rc = qpnp_read_wrapper(rtc_dd, &rtc_dd->rtc_ctrl_reg,
 				rtc_dd->rtc_base + REG_OFFSET_RTC_CTRL, 1);
 	if (rc) {
-		dev_err(&spmi->dev,
+		dev_dbg(&spmi->dev,
 			"Read from RTC control reg failed\n");
 		goto fail_rtc_enable;
 	}
 
 	if (!(rtc_dd->rtc_ctrl_reg & BIT_RTC_ENABLE)) {
-		dev_err(&spmi->dev,
+		dev_dbg(&spmi->dev,
 			"RTC h/w disabled, rtc not registered\n");
 		goto fail_rtc_enable;
 	}
@@ -576,7 +575,7 @@ static int qpnp_rtc_probe(struct spmi_device *spmi)
 	rc = qpnp_read_wrapper(rtc_dd, &rtc_dd->alarm_ctrl_reg1,
 				rtc_dd->alarm_base + REG_OFFSET_ALARM_CTRL1, 1);
 	if (rc) {
-		dev_err(&spmi->dev,
+		dev_dbg(&spmi->dev,
 			"Read from  Alarm control reg failed\n");
 		goto fail_rtc_enable;
 	}
@@ -585,7 +584,7 @@ static int qpnp_rtc_probe(struct spmi_device *spmi)
 	rc = qpnp_write_wrapper(rtc_dd, &rtc_dd->alarm_ctrl_reg1,
 			rtc_dd->alarm_base + REG_OFFSET_ALARM_CTRL1, 1);
 	if (rc) {
-		dev_err(&spmi->dev, "SPMI write failed!\n");
+		dev_dbg(&spmi->dev, "SPMI write failed!\n");
 		goto fail_rtc_enable;
 	}
 
@@ -598,7 +597,7 @@ static int qpnp_rtc_probe(struct spmi_device *spmi)
 	rtc_dd->rtc = rtc_device_register("qpnp_rtc", &spmi->dev,
 						&qpnp_rtc_ops, THIS_MODULE);
 	if (IS_ERR(rtc_dd->rtc)) {
-		dev_err(&spmi->dev, "%s: RTC registration failed (%ld)\n",
+		dev_dbg(&spmi->dev, "%s: RTC registration failed (%ld)\n",
 					__func__, PTR_ERR(rtc_dd->rtc));
 		rc = PTR_ERR(rtc_dd->rtc);
 		goto fail_rtc_enable;
@@ -609,7 +608,7 @@ static int qpnp_rtc_probe(struct spmi_device *spmi)
 				 qpnp_alarm_trigger, IRQF_TRIGGER_RISING,
 				 "qpnp_rtc_alarm", rtc_dd);
 	if (rc) {
-		dev_err(&spmi->dev, "Request IRQ failed (%d)\n", rc);
+		dev_dbg(&spmi->dev, "Request IRQ failed (%d)\n", rc);
 		goto fail_req_irq;
 	}
 
@@ -669,7 +668,7 @@ static void qpnp_rtc_shutdown(struct spmi_device *spmi)
 		rc = qpnp_write_wrapper(rtc_dd, &reg,
 			rtc_dd->alarm_base + REG_OFFSET_ALARM_CTRL1, 1);
 		if (rc) {
-			dev_err(rtc_dd->rtc_dev, "SPMI write failed\n");
+			dev_dbg(rtc_dd->rtc_dev, "SPMI write failed\n");
 			goto fail_alarm_disable;
 		}
 
@@ -678,7 +677,7 @@ static void qpnp_rtc_shutdown(struct spmi_device *spmi)
 				rtc_dd->alarm_base + REG_OFFSET_ALARM_RW,
 				NUM_8_BIT_RTC_REGS);
 		if (rc)
-			dev_err(rtc_dd->rtc_dev, "SPMI write failed\n");
+			dev_dbg(rtc_dd->rtc_dev, "SPMI write failed\n");
 
 fail_alarm_disable:
 		spin_unlock_irqrestore(&rtc_dd->alarm_ctrl_lock, irq_flags);

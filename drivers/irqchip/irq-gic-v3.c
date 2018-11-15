@@ -384,8 +384,7 @@ static void gic_show_resume_irq(struct gic_chip_data *gic)
 			name = "stray irq";
 		else if (desc->action && desc->action->name)
 			name = desc->action->name;
-
-		pr_warn("%s: %d triggered %s\n", __func__, irq, name);
+		pr_debug("%s: %d triggered %s\n", __func__, irq, name);
 	}
 }
 
@@ -521,7 +520,7 @@ static int gic_populate_rdist(void)
 		reg = readl_relaxed(ptr + GICR_PIDR2) & GIC_PIDR2_ARCH_MASK;
 		if (reg != GIC_PIDR2_ARCH_GICv3 &&
 		    reg != GIC_PIDR2_ARCH_GICv4) { /* We're in trouble... */
-			pr_warn("No redistributor present @%p\n", ptr);
+			pr_debug("No redistributor present @%p\n", ptr);
 			break;
 		}
 

@@ -166,17 +166,17 @@ static void print_wakeup_sources(void)
 	const struct list_head *wakeups;
 
 	if (suspend_abort) {
-		pr_info("Abort: %s", abort_reason);
+		pr_debug("Abort: %s", abort_reason);
 		return;
 	}
 
 	wakeups = get_wakeup_reasons_nosync();
 	list_for_each_entry(n, wakeups, next) {
 		if (n->desc && n->desc->action && n->desc->action->name)
-			pr_info("Resume caused by IRQ %d, %s\n", n->irq,
+			pr_debug("Resume caused by IRQ %d, %s\n", n->irq,
 				n->desc->action->name);
 		else
-			pr_info("Resume caused by IRQ %d\n", n->irq);
+			pr_debug("Resume caused by IRQ %d\n", n->irq);
 	}
 }
 
@@ -514,7 +514,7 @@ const struct list_head* get_wakeup_reasons(unsigned long timeout,
 			walk_irq_node_tree(base_irq_nodes, build_unfinished_nodes, unfinished);
 			return NULL;
 		}
-		pr_info("%s: waited for %u ms\n",
+		pr_debug("%s: waited for %u ms\n",
 				__func__,
 				jiffies_to_msecs(timeout - signalled));
 	}
