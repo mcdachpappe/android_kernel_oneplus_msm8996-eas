@@ -288,7 +288,7 @@ static void gic_show_resume_irq(struct gic_chip_data *gic)
 		else if (desc->action && desc->action->name)
 			name = desc->action->name;
 
-		pr_warning("%s: %d triggered %s\n", __func__,
+		pr_debug("%s: %d triggered %s\n", __func__,
 					i + gic->irq_offset, name);
 		log_base_wakeup_reason(i + gic->irq_offset);
 	}
@@ -981,7 +981,7 @@ void __init gic_init_physaddr(struct device_node *node)
 	struct resource res;
 	if (of_address_to_resource(node, 0, &res) == 0) {
 		gic_dist_physaddr = res.start;
-		pr_info("GIC physical location is %#lx\n", gic_dist_physaddr);
+		pr_debug("GIC physical location is %#lx\n", gic_dist_physaddr);
 	}
 }
 
