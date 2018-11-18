@@ -337,8 +337,8 @@ CLANG_IA_FLAG += -no-integrated-as
 
 #########
 
-HOSTCC       = gcc
-HOSTCXX      = g++
+HOSTCC       = $(CCACHE)gcc
+HOSTCXX      = $(CCACHE)g++
 HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89 $(GEN_OPT_FLAGS) $(EXTRA_OPTS)
 HOSTCXXFLAGS = -O2 $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS) -fdeclone-ctor-dtor
 
@@ -396,7 +396,7 @@ include $(srctree)/scripts/Kbuild.include
 # Make variables (CC, etc...)
 AS		= $(CROSS_COMPILE)as
 LD		= $(CROSS_COMPILE)ld --strip-debug
-CC		= $(CROSS_COMPILE)gcc -g0
+CC		= $(CCACHE) $(CROSS_COMPILE)gcc -g0
 CPP		= $(CPP_TRIPLE) -E -flto
 AR		= $(LLVM_TRIPLE)ar
 NM		= $(CROSS_COMPILE)nm
