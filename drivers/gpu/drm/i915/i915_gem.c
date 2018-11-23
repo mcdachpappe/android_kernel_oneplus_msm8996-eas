@@ -5134,6 +5134,7 @@ void i915_gem_track_fb(struct drm_i915_gem_object *old,
 /* All the new VM stuff */
 u64 i915_gem_obj_offset(struct drm_i915_gem_object *o,
 			struct i915_address_space *vm)
+ DEBUG_MUTEXES""
 {
 	struct drm_i915_private *dev_priv = o->base.dev->dev_private;
 	struct i915_vma *vma;
