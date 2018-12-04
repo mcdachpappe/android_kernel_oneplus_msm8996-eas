@@ -1330,15 +1330,21 @@
 
 &soc {
 	qcom,msm-thermal {
-		qcom,poll-ms = <50>;
-		qcom,limit-temp = <80>;
-		qcom,core-limit-temp = <90>;
+		qcom,poll-ms = <100>;
+		qcom,limit-temp = <60>;
+		qcom,core-limit-temp = <70>;
 		msm_thermal_freq: qcom,vdd-apps-rstr {
 			qcom,max-freq-level = <1209600>;
 			qcom,levels = <1056000 1516800 1516800>;
 		};
 		qcom,vdd-gfx-rstr{
 			qcom,levels = <6 8 9>; /* Nominal, Turbo, Turbo_L1 */
+		};
+		
+		msm_thermal_freq: qcom,vdd-apps-rstr{
+			qcom,vdd-rstr-reg = "vdd-apps";
+			qcom,levels = <576000 600000 600000>;
+			qcom,freq-req;
 		};
 	};
 };
