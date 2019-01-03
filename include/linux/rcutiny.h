@@ -141,6 +141,14 @@ static inline unsigned long rcu_batches_completed_bh(void)
 	return 0;
 }
 
+/*
+ * Return the number of sched grace periods completed.
+ */
+static inline unsigned long rcu_batches_completed_sched(void)
+{
+	return 0;
+}
+
 static inline void rcu_force_quiescent_state(void)
 {
 }

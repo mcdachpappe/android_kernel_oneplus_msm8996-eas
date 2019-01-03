@@ -57,6 +57,8 @@
 #include <linux/ftrace_event.h>
 #include <linux/suspend.h>
 
+#include <soc/qcom/watchdog.h>
+
 #include "tree.h"
 #include "rcu.h"
 
@@ -124,8 +126,6 @@ int rcu_num_lvls __read_mostly = RCU_NUM_LVLS;
 /* Number of rcu_nodes at specified level. */
 static int num_rcu_lvl[] = NUM_RCU_LVL_INIT;
 int rcu_num_nodes __read_mostly = NUM_RCU_NODES; /* Total # rcu_nodes in use. */
-/* panic() on RCU Stall sysctl. */
-int sysctl_panic_on_rcu_stall __read_mostly;
 
 /*
  * The rcu_scheduler_active variable transitions from zero to one just
@@ -1257,12 +1257,6 @@ static void rcu_dump_cpu_stacks(struct rcu_state *rsp)
 	}
 }
 
-static inline void panic_on_rcu_stall(void)
-{
-	if (sysctl_panic_on_rcu_stall)
-		panic("RCU Stall\n");
-}
-
 static void print_other_cpu_stall(struct rcu_state *rsp, unsigned long gpnum)
 {
 	int cpu;
@@ -1338,7 +1332,10 @@ static void print_other_cpu_stall(struct rcu_state *rsp, unsigned long gpnum)
 
 	rcu_check_gp_kthread_starvation(rsp);
 
-	panic_on_rcu_stall();
+#ifdef CONFIG_RCU_STALL_WATCHDOG_BITE
+	/* Induce watchdog bite */
+	msm_trigger_wdog_bite();
+#endif
 
 	force_quiescent_state(rsp);  /* Kick them all. */
 }
@@ -1375,7 +1372,10 @@ static void print_cpu_stall(struct rcu_state *rsp)
 			   jiffies + 3 * rcu_jiffies_till_stall_check() + 3);
 	raw_spin_unlock_irqrestore(&rnp->lock, flags);
 
-	panic_on_rcu_stall();
+#ifdef CONFIG_RCU_STALL_WATCHDOG_BITE
+	/* Induce non secure watchdog bite to collect context */
+	msm_trigger_wdog_bite();
+#endif
 
 	/*
 	 * Attempt to revive the RCU machinery by forcing a context switch.

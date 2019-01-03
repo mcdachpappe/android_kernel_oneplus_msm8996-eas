@@ -82,8 +82,6 @@ static void __init rcu_bootup_announce_oddness(void)
 		pr_info("\tRCU lockdep checking is enabled.\n");
 	if (IS_ENABLED(CONFIG_RCU_TORTURE_TEST_RUNNABLE))
 		pr_info("\tRCU torture testing starts during boot.\n");
-	if (IS_ENABLED(CONFIG_RCU_CPU_STALL_INFO))
-		pr_info("\tAdditional per-CPU info printed with stalls.\n");
 	if (RCU_NUM_LVLS >= 4)
 		pr_info("\tFour(or more)-level hierarchy is enabled.\n");
 	if (RCU_FANOUT_LEAF != 16)
@@ -456,7 +454,8 @@ void rcu_read_unlock_special(struct task_struct *t)
 		 */
 		for (;;) {
 			rnp = t->rcu_blocked_node;
-			raw_spin_lock_rcu_node(rnp); /* irqs already disabled. */
+			raw_spin_lock(&rnp->lock);  /* irqs already disabled. */
+			smp_mb__after_unlock_lock();
 			if (rnp == t->rcu_blocked_node)
 				break;
 			WARN_ON_ONCE(1);
@@ -1912,6 +1911,7 @@ static void wake_nocb_leader(struct rcu_data *rdp, bool force)
 	if (READ_ONCE(rdp_leader->nocb_leader_sleep) || force) {
 		/* Prior smp_mb__after_atomic() orders against prior enqueue. */
 		WRITE_ONCE(rdp_leader->nocb_leader_sleep, false);
+                smp_mb(); /* ->nocb_leader_sleep before wake_up(). */
 		wake_up(&rdp_leader->nocb_wq);
 	}
 }
