@@ -201,4 +201,6 @@ source "drivers/param_read_write/Kconfig"
 #porting from 8994 oneplus2 by yangrujin@bsp for support oem trace,2015/10/27
 source "drivers/oneplus/Kconfig"
 
+source "drivers/dts_eagle/Kconfig"
+
 endmenu
