@@ -339,6 +339,26 @@ typedef enum {
     WMI_SERVICE_LISTEN_INTERVAL_OFFLOAD_SUPPORT=149, /* Support listen interval offload */
     WMI_SERVICE_BSS_COLOR_OFFLOAD=150, /* Support BSS color change for STA, OBSS color collision detection in FW for AP and STA */
     WMI_SERVICE_RUNTIME_DPD_RECAL=151, /* Runtime DPD recalibration support */
+    WMI_SERVICE_STA_TWT=152, /* support for TWT (Target Wake Time) of STA */
+    WMI_SERVICE_AP_TWT=153, /* support for TWT (Target Wake Time) on AP */
+    WMI_SERVICE_GMAC_OFFLOAD_SUPPORT=154, /* Support for GMAC */
+    WMI_SERVICE_SPOOF_MAC_SUPPORT=155,  /* support for SERVICE_SPOOF_MAC */
+    WMI_SERVICE_PEER_TID_CONFIGS_SUPPORT=156,  /* Support TID specific configurations per peer (ack,aggr,retry,rate) */
+    WMI_SERVICE_VDEV_SWRETRY_PER_AC_CONFIG_SUPPORT=157,  /* Support vdev software retries configuration per AC (non aggr retry/aggr retry) */
+    WMI_SERVICE_DUAL_BEACON_ON_SINGLE_MAC_SCC_SUPPORT=158, /* Support dual beacon on same channel on single MAC */
+    WMI_SERVICE_DUAL_BEACON_ON_SINGLE_MAC_MCC_SUPPORT=159, /* Support dual beacon on different channel on single MAC */
+    WMI_SERVICE_MOTION_DET=160, /* support for motion detection config */
+    WMI_SERVICE_INFRA_MBSSID=161, /* support infra multi-BSSID feature */
+    WMI_SERVICE_OBSS_SPATIAL_REUSE=162, /* support spatial reuse feature */
+    WMI_SERVICE_VDEV_DIFFERENT_BEACON_INTERVAL_SUPPORT=163, /* Support different beacon intervals on different VDEVs */
+    WMI_SERVICE_NAN_DBS_SUPPORT=164, /* Support DBS for NAN discovery interface */
+    WMI_SERVICE_NDI_DBS_SUPPORT=165, /* Support DBS for NAN data interface */
+    WMI_SERVICE_NAN_SAP_SUPPORT=166, /* Support SAP Concurrency for NAN Discovery interface */
+    WMI_SERVICE_NDI_SAP_SUPPORT=167, /* Support SAP Concurrency for NAN Data interface */
+    WMI_SERVICE_CFR_CAPTURE_SUPPORT=168, /* Support to capture uncompressed Channel Frequency Response (CFR) */
+    WMI_SERVICE_CFR_CAPTURE_IND_MSG_TYPE_1=169, /* Message type HTT_PEER_CFR_CAPTURE_MSG_TYPE_1 in HTT_T2H_MSG_TYPE_CFR_DUMP_COMPL_IND */
+
+
     /******* ADD NEW SERVICES HERE *******/
 
     WMI_MAX_EXT_SERVICE
@@ -400,8 +420,8 @@ typedef enum {
         (svc_id) < WMI_MAX_SERVICE ? \
             WMI_SERVICE_IS_ENABLED(pwmi_svc_bmap, svc_id) : \
             /* If service ID is in the extended range, check ext_bmap */ \
-            (pwmi_svc_ext_bmap)[((svc_id) - WMI_MAX_SERVICE) / 32] >> \
-                ((svc_id) & 0x1f))
+            (((pwmi_svc_ext_bmap)[((svc_id) - WMI_MAX_SERVICE) / 32] >> \
+                ((svc_id) & 0x1f)) & 0x1))
 
 
 #ifdef __cplusplus

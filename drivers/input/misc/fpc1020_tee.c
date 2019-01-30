@@ -280,6 +280,7 @@ static DEVICE_ATTR(irq, S_IRUSR | S_IWUSR, irq_get, irq_ack);
 extern void int_touch(void);
 extern struct completion key_cm;
 extern bool virtual_key_enable;
+extern bool s1302_is_keypad_stopped(void);
 
 bool key_home_pressed = false;
 EXPORT_SYMBOL(key_home_pressed);
@@ -297,7 +298,7 @@ static ssize_t report_home_set(struct device *dev,
 	{
         if(virtual_key_enable){
                 key_home_pressed = true;
-        }else{
+        }else if (!s1302_is_keypad_stopped()) {
             input_report_key(fpc1020->input_dev,
                             KEY_HOME, 1);
             input_sync(fpc1020->input_dev);
@@ -420,6 +421,20 @@ void fpc1020_input_destroy(struct fpc1020_data *fpc1020)
 		input_free_device(fpc1020->input_dev);
 }
 
+static void set_fingerprintd_nice(int nice)
+{
+	struct task_struct *p;
+
+	read_lock(&tasklist_lock);
+	for_each_process(p) {
+		if (!memcmp(p->comm, "fingerprintd", 13)) {
+			set_user_nice(p, nice);
+			break;
+		}
+	}
+	read_unlock(&tasklist_lock);
+}
+
 #if defined(CONFIG_FB)
 static int fb_notifier_callback(struct notifier_block *self, unsigned long event, void *data)
 {
@@ -436,11 +451,12 @@ static int fb_notifier_callback(struct notifier_block *self, unsigned long event
 			dev_err(fpc1020->dev, "%s screen on\n", __func__);
 			fpc1020->screen_state = 1;
 			sysfs_notify(&fpc1020->dev->kobj, NULL, dev_attr_screen_state.attr.name);
-
+			set_fingerprintd_nice(0);
 		} else if( *blank == FB_BLANK_POWERDOWN && (event == FB_EARLY_EVENT_BLANK/*FB_EVENT_BLANK*/ )) {
             dev_err(fpc1020->dev, "%s screen off\n", __func__);
 		    fpc1020->screen_state = 0;
 			sysfs_notify(&fpc1020->dev->kobj, NULL, dev_attr_screen_state.attr.name);
+			set_fingerprintd_nice(-1);
 		}
 	}
 	return 0;

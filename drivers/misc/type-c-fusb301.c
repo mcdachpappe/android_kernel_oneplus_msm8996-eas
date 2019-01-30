@@ -50,7 +50,7 @@
 
 #include <linux/type-c_notifier.h>
 
-#define OTG_WL_HOLD_TIME 5000
+#define OTG_WL_HOLD_TIME 1000
 
 #if (LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 38))
 #define KERNEL_ABOVE_2_6_38
@@ -313,7 +313,7 @@ static ssize_t config_mode(struct device *dev,
 {
     int error;
     unsigned long data;
-	u8 rdata;
+	u8 rdata = 0;
 	struct fusb301_info *info = dev_get_drvdata(dev);
 
 	error = sstrtoul(buf, 10, &data);
@@ -437,7 +437,7 @@ static int set_property_on_smbchg(enum power_supply_property prop, int val)
 }
 static irqreturn_t fusb301_irq_thread(int irq, void *handle)
 {
-    u8 intr, rdata;
+    u8 intr = 0, rdata = 0;
 	int bc_lvl;
 	struct fusb301_info *info = (struct fusb301_info *)handle;
 
@@ -1035,6 +1035,7 @@ static int fusb301_remove(struct i2c_client *client)
         disable_irq_wake(client->irq);
         free_irq(client->irq, info);
     }
+    wake_lock_destroy(&info->otg_wl);
     device_remove_file(info->dev_t, &dev_attr_type);
     device_destroy(info->fusb_class, 0);
     class_destroy(info->fusb_class);

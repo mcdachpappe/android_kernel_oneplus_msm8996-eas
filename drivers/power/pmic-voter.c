@@ -352,7 +352,7 @@ const char *get_effective_client(struct votable *votable)
 int vote(struct votable *votable, const char *client_str, bool enabled, int val)
 {
 	int effective_id = -EINVAL;
-	int effective_result;
+	int effective_result = 0;
 	int client_id;
 	int rc = 0;
 	bool similar_vote = false;
@@ -405,10 +405,10 @@ int vote(struct votable *votable, const char *client_str, bool enabled, int val)
 		break;
 	case VOTE_SET_ANY:
 		vote_set_any(votable, client_id,
-				&effective_result, &effective_id);
-		break;
+        	&effective_result, &effective_id);
+    		break;
 	default:
-		return -EINVAL;
+		rc = -EINVAL;
 	}
 
 	/*

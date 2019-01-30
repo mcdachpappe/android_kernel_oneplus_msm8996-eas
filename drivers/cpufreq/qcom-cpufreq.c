@@ -28,6 +28,15 @@
 #include <linux/platform_device.h>
 #include <linux/of.h>
 #include <trace/events/power.h>
+#include <soc/qcom/socinfo.h>
+
+// AP: Default startup frequencies
+#define CONFIG_CPU_FREQ_MIN_CLUSTER1	307200
+#define CONFIG_CPU_FREQ_MAX_CLUSTER1	1593600
+#define CONFIG_CPU_FREQ_MAX_CLUSTER1PRO	2188800
+#define CONFIG_CPU_FREQ_MIN_CLUSTER2	307200
+#define CONFIG_CPU_FREQ_MAX_CLUSTER2	2150400
+#define CONFIG_CPU_FREQ_MAX_CLUSTER2PRO	2342400
 
 static DEFINE_MUTEX(l2bw_lock);
 
@@ -183,7 +192,51 @@ static int msm_cpufreq_init(struct cpufreq_policy *policy)
 			cpumask_set_cpu(cpu, policy->cpus);
 
 	if (cpufreq_frequency_table_cpuinfo(policy, table))
+	{
+		// AP: set default frequencies to prevent overclocking or underclocking during start
+		if (policy->cpu <= 1)
+		{
+			policy->cpuinfo.min_freq = CONFIG_CPU_FREQ_MIN_CLUSTER1;
+			if (socinfo_get_id() == 305) {
+				policy->cpuinfo.max_freq = CONFIG_CPU_FREQ_MAX_CLUSTER1PRO;
+			} else {
+				policy->cpuinfo.max_freq = CONFIG_CPU_FREQ_MAX_CLUSTER1;
+			}
+		}
+
+		if (policy->cpu >= 2)
+		{
+			policy->cpuinfo.min_freq = CONFIG_CPU_FREQ_MIN_CLUSTER2;
+			if (socinfo_get_id() == 305) {
+				policy->cpuinfo.max_freq = CONFIG_CPU_FREQ_MAX_CLUSTER2PRO;
+			} else {
+				policy->cpuinfo.max_freq = CONFIG_CPU_FREQ_MAX_CLUSTER2;
+			}
+		}
+
 		pr_err("cpufreq: failed to get policy min/max\n");
+	}
+
+	// AP: set default frequencies to prevent overclocking or underclocking during start
+	if (policy->cpu <= 1)
+	{
+		policy->min = CONFIG_CPU_FREQ_MIN_CLUSTER1;
+		if (socinfo_get_id() == 305) {
+			policy->max = CONFIG_CPU_FREQ_MAX_CLUSTER1PRO;
+		} else {
+			policy->max = CONFIG_CPU_FREQ_MAX_CLUSTER1;
+		}
+	}
+
+	if (policy->cpu >= 2)
+	{
+		policy->min = CONFIG_CPU_FREQ_MIN_CLUSTER2;
+		if (socinfo_get_id() == 305) {
+			policy->max = CONFIG_CPU_FREQ_MAX_CLUSTER2PRO;
+		} else {
+			policy->max = CONFIG_CPU_FREQ_MAX_CLUSTER2;
+		}
+	}
 
 	cur_freq = clk_get_rate(cpu_clk[policy->cpu])/1000;
 
@@ -516,9 +569,9 @@ static struct platform_driver msm_cpufreq_plat_driver = {
 
 static int get_c0_available_cpufreq(void)
 {
-	unsigned int max_cpufreq_index, min_cpufreq_index;
-	unsigned int max_index;
-	unsigned int index_max, index_min;
+	unsigned int max_cpufreq_index = 0, min_cpufreq_index = 0;
+	unsigned int max_index = 0;
+	unsigned int index_max = 0, index_min = 0;
 	struct cpufreq_frequency_table *table, *pos;
 
 	table = cpufreq_frequency_get_table(0);
@@ -565,9 +618,9 @@ static int get_c0_available_cpufreq(void)
 
 static int get_c1_available_cpufreq(void)
 {
-	unsigned int max_cpufreq_index, min_cpufreq_index;
-	unsigned int max_index;
-	unsigned int index_max, index_min;
+	unsigned int max_cpufreq_index = 0, min_cpufreq_index = 0;
+	unsigned int max_index = 0;
+	unsigned int index_max = 0, index_min = 0;
 	struct cpufreq_frequency_table *table, *pos;
 
 	table = cpufreq_frequency_get_table(cluster1_first_cpu);
@@ -624,7 +677,7 @@ static int c0_cpufreq_qos_handler(struct notifier_block *b, unsigned long val, v
 		return NOTIFY_BAD;
 
 	ret = get_c0_available_cpufreq();
-	if (!ret) {
+	if (ret) {
 		cpufreq_cpu_put(policy);
 		return NOTIFY_BAD;
 	}

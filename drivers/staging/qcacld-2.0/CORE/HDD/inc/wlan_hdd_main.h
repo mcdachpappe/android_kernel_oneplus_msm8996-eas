@@ -343,26 +343,11 @@ struct linkspeedContext
    unsigned int magic;
 };
 
-/**
- * struct random_mac_context - Context used with hdd_random_mac_callback
- * @random_mac_completion: Event on which hdd_set_random_mac will wait
- * @adapter: Pointer to adapter
- * @magic: For valid context this is set to ACTION_FRAME_RANDOM_CONTEXT_MAGIC
- * @set_random_addr: Status of random filter set
- */
-struct random_mac_context {
-	struct completion random_mac_completion;
-	hdd_adapter_t *adapter;
-	unsigned int magic;
-	bool set_random_addr;
-};
-
 extern spinlock_t hdd_context_lock;
 
 #define STATS_CONTEXT_MAGIC 0x53544154   //STAT
 #define PEER_INFO_CONTEXT_MAGIC  0x52535349   /* PEER_INFO */
 #define POWER_CONTEXT_MAGIC 0x504F5752   //POWR
-#define SNR_CONTEXT_MAGIC   0x534E5200   //SNR
 #define LINK_CONTEXT_MAGIC  0x4C494E4B   //LINKSPEED
 #define LINK_STATUS_MAGIC   0x4C4B5354   //LINKSTATUS(LNST)
 #define TEMP_CONTEXT_MAGIC 0x74656d70   // TEMP (temperature)
@@ -1362,6 +1347,10 @@ struct hdd_adapter_s
 #endif /* WLAN_FEATURE_TSF_PLUS */
 #endif
 
+#ifdef WLAN_FEATURE_MOTION_DETECTION
+   uint8_t motion_detection_mode;
+#endif
+
    hdd_cfg80211_state_t cfg80211State;
 
 #ifdef WLAN_FEATURE_PACKET_FILTERING
@@ -1431,11 +1420,6 @@ struct hdd_adapter_s
     /* Time stamp for start RoC request */
     v_TIME_t startRocTs;
 
-    /* State for synchronous OCB requests to WMI */
-    struct sir_ocb_set_config_response ocb_set_config_resp;
-    struct sir_ocb_get_tsf_timer_response ocb_get_tsf_timer_resp;
-    struct sir_dcc_get_stats_response *dcc_get_stats_resp;
-    struct sir_dcc_update_ndl_response dcc_update_ndl_resp;
     struct dsrc_radio_chan_stats_ctxt dsrc_chan_stats;
 #ifdef WLAN_FEATURE_DSRC
     /* MAC addresses used for OCB interfaces */
@@ -1458,11 +1442,16 @@ struct hdd_adapter_s
     struct hdd_netif_queue_history
             queue_oper_history[WLAN_HDD_MAX_HISTORY_ENTRY];
     struct hdd_netif_queue_stats queue_oper_stats[WLAN_REASON_TYPE_MAX];
-    struct power_stats_response *chip_power_stats;
 
     /* random address management for management action frames */
     spinlock_t random_mac_lock;
     struct action_frame_random_mac random_mac[MAX_RANDOM_MAC_ADDRS];
+    /*
+     * Store the restrict_offchannel count
+     * to cater to multiple application.
+     */
+    uint8_t restrict_offchannel_cnt;
+
 };
 
 #define WLAN_HDD_GET_STATION_CTX_PTR(pAdapter) (&(pAdapter)->sessionCtx.station)
@@ -1843,6 +1832,7 @@ struct hdd_context_s
 
    v_BOOL_t hdd_wlan_suspended;
    v_BOOL_t suspended;
+   bool prevent_suspend;
 
    spinlock_t filter_lock;
 
@@ -1953,11 +1943,6 @@ struct hdd_context_s
 
     /* debugfs entry */
     struct dentry *debugfs_phy;
-
-#ifdef WLAN_POWER_DEBUGFS
-    /* mutex lock to block concurrent access */
-    struct mutex power_stats_lock;
-#endif
 
     /* Use below lock to protect access to isSchedScanUpdatePending
      * since it will be accessed in two different contexts.
@@ -2154,6 +2139,14 @@ struct hdd_context_s
 #ifdef WLAN_FEATURE_SAP_TO_FOLLOW_STA_CHAN
     sap_ch_switch_ctx  ch_switch_ctx;
 #endif//#ifdef WLAN_FEATURE_SAP_TO_FOLLOW_CHAN
+#ifdef FEATURE_WLAN_CH_AVOID
+    tHddAvoidFreqList dnbs_avoid_freq_list;
+    /* Lock to control access to dnbs avoid freq list */
+    struct mutex avoid_freq_lock;
+#endif
+    spinlock_t restrict_offchan_lock;
+    bool  restrict_offchan_flag;
+
 };
 
 /*---------------------------------------------------------------------------

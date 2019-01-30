@@ -308,7 +308,7 @@ static __ref int do_sampling(void *data)
 	static int prev_temp[NR_CPUS];
 
 	while (!kthread_should_stop()) {
-		wait_for_completion(&sampling_completion);
+		wait_for_completion_interruptible(&sampling_completion);
 		cancel_delayed_work(&sampling_work);
 
 		mutex_lock(&kthread_update_mutex);
@@ -373,7 +373,7 @@ static int update_userspace_power(struct sched_params __user *argp)
 {
 	int i;
 	int ret;
-	int cpu = -1;
+	int cpu = INT_MAX;
 	struct cpu_activity_info *node;
 	struct cpu_static_info *sp, *clear_sp;
 	int cpumask, cluster, mpidr;
@@ -511,7 +511,7 @@ static long msm_core_ioctl(struct file *file, unsigned int cmd,
 
 		mutex_lock(&policy_update_mutex);
 		node = &activity[cpu];
-		if (!node->sp->table) {
+		if (!node->sp->table || !node->sp->voltage) {
 			ret = -EINVAL;
 			goto unlock;
 		}
@@ -519,7 +519,7 @@ static long msm_core_ioctl(struct file *file, unsigned int cmd,
 				node->sp->voltage,
 				sizeof(uint32_t) * node->sp->num_of_freqs);
 		if (ret)
-			break;
+			goto unlock;
 		for (i = 0; i < node->sp->num_of_freqs; i++) {
 			ret = copy_to_user((void __user *)&argp->freq[i],
 					&node->sp->table[i].frequency,

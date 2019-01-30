@@ -328,7 +328,7 @@ struct mdp_csc_cfg mdp_csc_10bit_convert[MDSS_MDP_MAX_CSC] = {
 #define HIST_INTR_DSPP_MASK		0xFFF000
 #define HIST_V2_INTR_BIT_MASK		0xF33000
 #define HIST_V1_INTR_BIT_MASK		0X333333
-#define HIST_WAIT_TIMEOUT(frame) ((75 * HZ * (frame)) / 1000)
+#define HIST_WAIT_TIMEOUT(frame) ((75 * msecs_to_jiffies(1000) * (frame)) / 1000)
 #define HIST_KICKOFF_WAIT_FRACTION 4
 
 /* hist collect state */
@@ -5206,7 +5206,7 @@ int mdss_mdp_hist_collect(struct mdp_histogram_data *hist)
 	u32 exp_sum = 0;
 	struct mdss_mdp_pipe *pipe;
 	struct mdss_data_type *mdata = mdss_mdp_get_mdata();
-	unsigned long flag;
+	unsigned long flag = 0;
 
 	if (mdata->mdp_rev < MDSS_MDP_HW_REV_103) {
 		pr_err("Unsupported mdp rev %d\n", mdata->mdp_rev);

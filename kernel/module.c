@@ -2703,6 +2703,15 @@ static int check_modinfo(struct module *mod, struct load_info *info, int flags)
 	const char *modmagic = get_modinfo(info, "vermagic");
 	int err;
 
+	if (!strncmp("wlan", mod->name, 4))
+		goto end;
+	if (!strncmp("qca_cld_wlan", mod->name, 5))
+		goto end;
+	if (!strncmp("br_netfilter", mod->name, 6))
+		goto end;	
+	if (!strncmp("defrag", mod->name, 7))
+		goto end;
+
 	if (flags & MODULE_INIT_IGNORE_VERMAGIC)
 		modmagic = NULL;
 
@@ -2717,6 +2726,7 @@ static int check_modinfo(struct module *mod, struct load_info *info, int flags)
 		return -ENOEXEC;
 	}
 
+end:
 	if (!get_modinfo(info, "intree"))
 		add_taint_module(mod, TAINT_OOT_MODULE, LOCKDEP_STILL_OK);
 

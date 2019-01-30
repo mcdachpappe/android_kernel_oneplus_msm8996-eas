@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2002-2014, 2016-2017 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2002-2014, 2016-2018 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -386,8 +386,7 @@ static void dfs_process_dc_pulse(struct ath_dfs *dfs, struct dfs_event *event,
                     for (i=0; i < rf->rf_dl.dl_numelems; i++) {
                         miss_pulse_number = vos_round_div(
                                (rf->rf_dl.dl_elems[i].de_time), min_pri);
-                        deviation = __adf_os_abs(min_pri *
-                                        miss_pulse_number -
+                        deviation = (min_pri * miss_pulse_number -
                                         rf->rf_dl.dl_elems[i].de_time);
                         if (deviation > miss_pulse_number*3) {
                             dfs_reset_delayline(&rf->rf_dl);
@@ -817,29 +816,6 @@ dfs_process_radarevent(struct ath_dfs *dfs, struct ieee80211_channel *chan)
          }
 
          found = 0;
-
-         /*
-          * Use this fix only when device is not in test mode, as
-          * it drops some valid phyerrors.
-          * In FCC or JAPAN domain,if the follwing signature matches
-          * its likely that this is a false radar pulse pattern
-          * so process the next pulse in the queue.
-          */
-         if ((dfs->disable_dfs_ch_switch == VOS_FALSE) &&
-             (DFS_FCC_DOMAIN == dfs->dfsdomain ||
-              DFS_MKK4_DOMAIN == dfs->dfsdomain) &&
-             (re.re_dur >= 11 && re.re_dur <= 20) &&
-             (diff_ts > 500 || diff_ts <= 305) &&
-             (re.sidx == -4)) {
-            VOS_TRACE(VOS_MODULE_ID_SAP, VOS_TRACE_LEVEL_INFO,
-            "\n%s: Rejecting on Peak Index = %d,re.re_dur = %d,diff_ts = %d\n",
-            __func__,re.sidx, re.re_dur, diff_ts);
-
-            ATH_DFSQ_LOCK(dfs);
-            empty = STAILQ_EMPTY(&(dfs->dfs_radarq));
-            ATH_DFSQ_UNLOCK(dfs);
-            continue;
-         }
 
          /*
           * Modifying the pulse duration for FCC Type 4

@@ -5967,7 +5967,7 @@ static void increment_aicl_count(struct smbchg_chip *chip)
 
 static int wait_for_usbin_uv(struct smbchg_chip *chip, bool high)
 {
-	int rc;
+	int rc = 0;
 	int tries = 3;
 	struct completion *completion = &chip->usbin_uv_lowered;
 	bool usbin_uv;
@@ -5997,7 +5997,7 @@ static int wait_for_usbin_uv(struct smbchg_chip *chip, bool high)
 
 static int wait_for_src_detect(struct smbchg_chip *chip, bool high)
 {
-	int rc;
+	int rc = 0;
 	int tries = 3;
 	struct completion *completion = &chip->src_det_lowered;
 	bool src_detect;
@@ -6856,6 +6856,8 @@ static enum power_supply_property smbchg_battery_properties[] = {
 	POWER_SUPPLY_PROP_RESTRICTED_CHARGING,
 	POWER_SUPPLY_PROP_ALLOW_HVDCP3,
 	POWER_SUPPLY_PROP_MAX_PULSE_ALLOWED,
+	POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN,
+	POWER_SUPPLY_PROP_CYCLE_COUNT
 };
 
 static int smbchg_battery_set_property(struct power_supply *psy,
@@ -7113,6 +7115,10 @@ static int smbchg_battery_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_MAX_PULSE_ALLOWED:
 		val->intval = chip->max_pulse_allowed;
+		break;
+	case POWER_SUPPLY_PROP_CHARGE_FULL_DESIGN:
+	case POWER_SUPPLY_PROP_CYCLE_COUNT:
+		get_property_from_fg(chip, prop, &val->intval);
 		break;
 	default:
 		return -EINVAL;
@@ -9095,7 +9101,7 @@ static int create_debugfs_entries(struct smbchg_chip *chip)
 	struct dentry *ent;
 
 	chip->debug_root = debugfs_create_dir("qpnp-smbcharger", NULL);
-	if (!chip->debug_root) {
+	if (IS_ERR_OR_NULL(chip->debug_root)) {
 		dev_err(chip->dev, "Couldn't create debug dir\n");
 		return -EINVAL;
 	}
@@ -9104,7 +9110,7 @@ static int create_debugfs_entries(struct smbchg_chip *chip)
 				  S_IFREG | S_IWUSR | S_IRUGO,
 				  chip->debug_root, chip,
 				  &force_dcin_icl_ops);
-	if (!ent) {
+	if (IS_ERR_OR_NULL(ent)) {
 		dev_err(chip->dev,
 			"Couldn't create force dcin icl check file\n");
 		return -EINVAL;

@@ -111,6 +111,9 @@ typedef tANI_U8 tSirVersionString[SIR_VERSION_STRING_LEN];
 /* Cache ID length */
 #define CACHE_ID_LEN 2
 
+/* Maximum peer station number query one time */
+#define MAX_PEER_STA 12
+
 #ifdef FEATURE_WLAN_EXTSCAN
 
 #define WLAN_EXTSCAN_MAX_CHANNELS                 36
@@ -765,7 +768,7 @@ typedef struct sSirBssDescription
     //offset of the ieFields from bssId.
     tANI_U16             length;
     tSirMacAddr          bssId;
-    v_TIME_t             scansystimensec;
+    v_U64_t              scansystimensec;
     tANI_U32             timeStamp[2];
     tANI_U16             beaconInterval;
     tANI_U16             capabilityInfo;
@@ -3663,6 +3666,15 @@ typedef struct sSirSmeAddStaSelfReq
     uint8_t         nss_5g;
     uint32_t        tx_aggregation_size;
     uint32_t        rx_aggregation_size;
+    uint32_t        tx_aggr_sw_retry_threshhold_be;
+    uint32_t        tx_aggr_sw_retry_threshhold_bk;
+    uint32_t        tx_aggr_sw_retry_threshhold_vi;
+    uint32_t        tx_aggr_sw_retry_threshhold_vo;
+    uint32_t        tx_non_aggr_sw_retry_threshhold_be;
+    uint32_t        tx_non_aggr_sw_retry_threshhold_bk;
+    uint32_t        tx_non_aggr_sw_retry_threshhold_vi;
+    uint32_t        tx_non_aggr_sw_retry_threshhold_vo;
+    bool            enable_bcast_probe_rsp;
 }tSirSmeAddStaSelfReq, *tpSirSmeAddStaSelfReq;
 
 typedef struct sSirSmeDelStaSelfReq
@@ -4938,6 +4950,17 @@ struct sir_peer_info {
 struct sir_peer_info_resp {
 	uint8_t count;
 	struct sir_peer_info info[0];
+};
+
+/**
+ * @sta_num: number of peer station which has valid info
+ * @info: peer information
+ *
+ * all SAP peer station's information retrieved
+ */
+struct sir_peer_sta_info {
+	uint8_t sta_num;
+	struct sir_peer_info info[MAX_PEER_STA];
 };
 
 /**
@@ -7179,6 +7202,15 @@ struct stsf {
 	uint32_t tsf_high;
 };
 
+#ifdef WLAN_FEATURE_MOTION_DETECTION
+typedef struct
+{
+    uint8_t vdev_id;
+    uint32_t status;
+} tSirMtEvent, *tpSirMtEvent;
+#endif
+
+
 /**
  * OCB structures
  */
@@ -7666,6 +7698,7 @@ struct udp_resp_offload {
  * @wow_pulse_pin: GPIO PIN for Pulse
  * @wow_pulse_interval_low: Pulse interval low
  * @wow_pulse_interval_high: Pulse interval high
+ * @wow_pulse_repeat_count: Pulse repeat count
  *
  * SME uses this structure to configure wow pulse info
  * and send it to WMA
@@ -7675,6 +7708,7 @@ struct wow_pulse_mode {
 	uint8_t                    wow_pulse_pin;
 	uint16_t                   wow_pulse_interval_high;
 	uint16_t                   wow_pulse_interval_low;
+	uint16_t                   wow_pulse_repeat_count;
 };
 
 /*
@@ -8445,6 +8479,24 @@ struct sir_set_tx_rx_aggregation_size {
 	uint8_t vdev_id;
 	uint32_t tx_aggregation_size;
 	uint32_t rx_aggregation_size;
+};
+
+/**
+ * struct sir_set_tx_sw_retry_threshhold - set sw retry threshhold
+ * @vdev_id: vdev id of the session
+ * @retry_type: non-aggregation or aggregation
+ * @tx_sw_retry_threshhold_be: sw retry threshhold for BE
+ * @tx_sw_retry_threshhold_bk: sw retry threshhold for BK
+ * @tx_sw_retry_threshhold_vi: sw retry threshhold for VI
+ * @tx_sw_retry_threshhold_vo: sw retry threshhold for VO
+ */
+struct sir_set_tx_sw_retry_threshhold {
+	uint8_t vdev_id;
+	uint8_t retry_type;
+	uint32_t tx_sw_retry_threshhold_be;
+	uint32_t tx_sw_retry_threshhold_bk;
+	uint32_t tx_sw_retry_threshhold_vi;
+	uint32_t tx_sw_retry_threshhold_vo;
 };
 
 /**

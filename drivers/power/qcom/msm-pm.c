@@ -51,7 +51,7 @@
 
 #define MAX_BUF_SIZE  1024
 
-static int msm_pm_debug_mask = 1;
+static int msm_pm_debug_mask = 0;
 module_param_named(
 	debug_mask, msm_pm_debug_mask, int, S_IRUGO | S_IWUSR | S_IWGRP
 );
@@ -814,7 +814,7 @@ static int msm_cpu_pm_probe(struct platform_device *pdev)
 		dent = debugfs_create_file("pc_debug_counter", S_IRUGO, NULL,
 				msm_pc_debug_counters,
 				&msm_pc_debug_counters_fops);
-		if (!dent)
+		if (IS_ERR_OR_NULL(dent))
 			pr_err("%s: ERROR debugfs_create_file failed\n",
 					__func__);
 		res = platform_get_resource(pdev, IORESOURCE_MEM, 0);

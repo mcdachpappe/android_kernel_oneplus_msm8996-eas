@@ -935,7 +935,7 @@ static int wcd_check_cross_conn(struct wcd_mbhc *mbhc)
 	u16 swap_res = 0;
 	enum wcd_mbhc_plug_type plug_type = MBHC_PLUG_TYPE_NONE;
 	s16 reg1 = 0;
-	bool hphl_sch_res = 0, hphr_sch_res = 0;
+	bool hphl_sch_res = false, hphr_sch_res = false;
 
 	if (wcd_swch_level_remove(mbhc)) {
 		pr_debug("%s: Switch level is low\n", __func__);
@@ -1000,7 +1000,7 @@ static bool wcd_is_special_headset(struct wcd_mbhc *mbhc)
 	struct snd_soc_codec *codec = mbhc->codec;
 	int delay = 0, rc;
 	bool ret = false;
-	u16 hs_comp_res;
+	u16 hs_comp_res = 0;
 	bool is_spl_hs = false;
 
 	/*
@@ -1559,7 +1559,7 @@ static void wcd_mbhc_detect_plug_type(struct wcd_mbhc *mbhc)
 
 static void wcd_mbhc_swch_irq_handler(struct wcd_mbhc *mbhc)
 {
-	bool detection_type = 0;
+	bool detection_type = false;
 	bool micbias1 = false;
 	struct snd_soc_codec *codec = mbhc->codec;
 
@@ -1584,8 +1584,8 @@ static void wcd_mbhc_swch_irq_handler(struct wcd_mbhc *mbhc)
 	wcd_cancel_hs_detect_plug(mbhc, &mbhc->correct_plug_swch);
 
 	/* ASUS_BSP Paul +++ */
-	//if (g_DebugMode)
-	//	goto exit;
+	if (g_DebugMode)
+		goto exit;
 	/* ASUS_BSP Paul --- */
 
 	if (mbhc->mbhc_cb->micbias_enable_status)
@@ -1693,7 +1693,7 @@ static void wcd_mbhc_swch_irq_handler(struct wcd_mbhc *mbhc)
 
 	}
 
-//exit: /* ASUS_BSP Paul +++ */
+exit: /* ASUS_BSP Paul +++ */
 	mbhc->in_swch_irq_handler = false;
 	WCD_MBHC_RSC_UNLOCK(mbhc);
 	pr_debug("%s: leave\n", __func__);
@@ -1804,10 +1804,10 @@ static int wcd_mbhc_get_button_mask(struct wcd_mbhc *mbhc)
 static irqreturn_t wcd_mbhc_hs_ins_irq(int irq, void *data)
 {
 	struct wcd_mbhc *mbhc = data;
-	bool detection_type = 0, hphl_sch = 0, mic_sch = 0;
+	bool detection_type = false, hphl_sch = false, mic_sch = false;
 	u16 elect_result = 0;
-	static u16 hphl_trigerred;
-	static u16 mic_trigerred;
+	static u16 hphl_trigerred = 0;
+	static u16 mic_trigerred = 0;
 
 	pr_debug("%s: enter\n", __func__);
 	if (!mbhc->mbhc_cfg->detect_extn_cable) {

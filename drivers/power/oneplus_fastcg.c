@@ -596,7 +596,7 @@ static void fastcg_work_func(struct work_struct *work)
 	struct fastchg_device_info *di = container_of(work,
 			struct fastchg_device_info,
 			fastcg_work);
-	pr_info("\n");
+	pr_debug("\n");
 	if (di->irq_enabled) {
 		free_irq(di->irq, di);
 		msleep(25);
@@ -681,7 +681,7 @@ static int dash_read(struct fastchg_device_info *di)
 		bit = gpio_get_value(di->ap_data);
 		data |= bit<<(6-i);
 	}
-	pr_info("recv data:0x%x\n", data);
+	pr_debug("recv data:0x%x\n", data);
 	return data;
 }
 
@@ -1139,7 +1139,7 @@ static int dash_pinctrl_init(struct fastchg_device_info *di)
 
 static int dash_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
-	struct fastchg_device_info *di;
+	struct fastchg_device_info *di = NULL;
 	int ret;
 
 	pr_info("dash_probe\n");
@@ -1217,6 +1217,8 @@ err_misc_register_failed:
 err_read_dt:
 	kfree(di);
 err_check_functionality_failed:
+	wake_lock_destroy(&di->fastchg_wake_lock);
+	wake_lock_destroy(&di->fastchg_update_fireware_lock);
 	pr_err("dash_probe fail\n");
 	return 0;
 }
@@ -1235,6 +1237,9 @@ static int dash_remove(struct i2c_client *client)
 	if (gpio_is_valid(di->ap_data))
 		gpio_free(di->ap_data);
 	pm_qos_remove_request(&big_cpu_update_freq);
+
+	wake_lock_destroy(&di->fastchg_wake_lock);
+        wake_lock_destroy(&di->fastchg_update_fireware_lock);
 
 	return 0;
 }
