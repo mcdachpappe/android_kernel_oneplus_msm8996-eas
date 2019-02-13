@@ -562,12 +562,12 @@ static int enter_state(suspend_state_t state)
 
 #ifndef CONFIG_SUSPEND_SKIP_SYNC
 	trace_suspend_resume(TPS("sync_filesystems"), 0, true);
-	pr_debug("PM: Syncing filesystems ... ");
+	printk(KERN_INFO "PM: Syncing filesystems ... ");
 	error = sys_sync_queue();
 	if (error) {
 		goto Unlock;
 	}
-	pr_debug("done.\n");
+	printk("done.\n");
 	trace_suspend_resume(TPS("sync_filesystems"), 0, false);
 #endif
 
