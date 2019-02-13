@@ -490,10 +490,12 @@ static void suspend_finish(void)
  */
 static void sys_sync_work_func(struct work_struct *work)
 {
+#ifndef CONFIG_SUSPEND_SKIP_SYNC
 	printk(KERN_INFO "PM: Syncing filesystems ... \n");
 	sys_sync();
 	sys_sync_completed = true;
 	wake_up(&sys_sync_wait);
+#endif
 }
 
 static int sys_sync_queue(void)
