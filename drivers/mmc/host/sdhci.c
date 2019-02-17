@@ -1469,19 +1469,6 @@ static void sdhci_set_power(struct sdhci_host *host, unsigned char mode,
 	struct mmc_host *mmc = host->mmc;
 	u8 pwr = 0;
 
-	if (!IS_ERR(mmc->supply.vmmc)) {
-		spin_unlock_irq(&host->lock);
-		mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, vdd);
-		spin_lock_irq(&host->lock);
-
-		if (mode != MMC_POWER_OFF)
-			sdhci_writeb(host, SDHCI_POWER_ON, SDHCI_POWER_CONTROL);
-		else
-			sdhci_writeb(host, 0, SDHCI_POWER_CONTROL);
-
-		return;
-	}
-
 	if (mode != MMC_POWER_OFF) {
 		switch (1 << vdd) {
 		case MMC_VDD_165_195:
@@ -1548,6 +1535,12 @@ static void sdhci_set_power(struct sdhci_host *host, unsigned char mode,
 		 */
 		if (host->quirks & SDHCI_QUIRK_DELAY_AFTER_POWER)
 			mdelay(10);
+	}
+
+	if (!IS_ERR(mmc->supply.vmmc)) {
+		spin_unlock_irq(&host->lock);
+		mmc_regulator_set_ocr(mmc, mmc->supply.vmmc, vdd);
+		spin_lock_irq(&host->lock);
 	}
 }
 
@@ -3184,13 +3177,18 @@ static irqreturn_t sdhci_cmdq_irq(struct sdhci_host *host, u32 intmask)
 	int err = 0;
 	u32 mask = 0;
 	irqreturn_t ret;
+	bool is_cmd_err = false;
 
-	if (intmask & SDHCI_INT_CMD_MASK)
+	if (intmask & SDHCI_INT_CMD_MASK) {
 		err = sdhci_get_cmd_err(intmask);
-	else if (intmask & SDHCI_INT_DATA_MASK)
+		is_cmd_err = true;
+	} else if (intmask & SDHCI_INT_DATA_MASK) {
 		err = sdhci_get_data_err(intmask);
+		if (intmask & SDHCI_INT_DATA_TIMEOUT)
+			is_cmd_err = sdhci_card_busy(host->mmc);
+	}
 
-	ret = cmdq_irq(host->mmc, err);
+	ret = cmdq_irq(host->mmc, err, is_cmd_err);
 	if (err) {
 		/* Clear the error interrupts */
 		mask = intmask & SDHCI_INT_ERROR_MASK;
