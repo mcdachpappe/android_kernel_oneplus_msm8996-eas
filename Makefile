@@ -249,6 +249,11 @@ SUBARCH := $(shell uname -m | sed -e s/i.86/x86/ -e s/x86_64/x86/ \
 # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
 ARCH		?= $(SUBARCH)
 CROSS_COMPILE	?= $(CONFIG_CROSS_COMPILE:"%"=%)
+HDK		:= /home/danny/eas/Toolchains/sdclang-lin6.4.2/
+HDK_TC		:= /home/danny/eas/Toolchains/sdclang-lin6.4.2/bin/
+ARCH		:= arm64
+SUBARCH		:= arm64
+CROSS_COMPILE	:= $(HDK_TC)aarch64-cortex_a57-linux-android-
 
 # Architecture as present in compile.h
 UTS_MACHINE 	:= $(ARCH)
@@ -303,7 +308,7 @@ EXTRA_OPTS := \
 	-fsched-pressure -fsched-spec-load -ftree-vectorize \
 	-fno-guess-branch-probability -fpredictive-commoning \
 	-fvect-cost-model=cheap -fsimd-cost-model=cheap \
-	-ftree-partial-pre -fno-gcse
+	-ftree-partial-pre -fno-gcse -fno-schedule-insns
 
 # Arm64 Architecture Specific GCC Flags
 # fall back to -march=armv8-a in case the compiler isn't compatible
@@ -337,10 +342,10 @@ CLANG_IA_FLAG += -no-integrated-as
 
 #########
 
-HOSTCC       = gcc
-HOSTCXX      = g++
+HOSTCC       = $(CCACHE)gcc
+HOSTCXX      = $(CCACHE)g++
 HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89 $(GEN_OPT_FLAGS) $(EXTRA_OPTS)
-HOSTCXXFLAGS = -O2 $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS) -fdeclone-ctor-dtor
+HOSTCXXFLAGS = -O2 $(GEN_OPT_FLAGS) $(EXTRA_OPTS) -fdeclone-ctor-dtor
 
 ifeq ($(shell $(HOSTCC) -v 2>&1 | grep -c "clang version"), 1)
 HOSTCFLAGS  += -Wno-unused-value -Wno-unused-parameter \
@@ -401,7 +406,7 @@ CPP		= $(CPP_TRIPLE) -E -flto
 AR		= $(LLVM_TRIPLE)ar
 NM		= $(CROSS_COMPILE)nm
 STRIP		= $(CROSS_COMPILE)strip
-OBJCOPY		= $(CROSS_COMPILE)objcopy -g --strip-debug
+OBJCOPY		= $(CROSS_COMPILE)objcopy -g --strip-debug --strip-unneeded
 OBJDUMP		= $(LLVM_TRIPLE)objdump -arch=armv8-a -mcpu=kryo
 AWK		= awk
 GENKSYMS	= scripts/genksyms/genksyms
@@ -1587,11 +1592,11 @@ image_name:
 # Clear a bunch of variables before executing the submake
 tools/: FORCE
 	$(Q)mkdir -p $(objtree)/tools
-	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS="$(filter --j% -j,$(MAKEFLAGS))" O=$(shell cd $(objtree) && /bin/pwd) subdir=tools -C $(src)/tools/
+	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS="$(filter --j% -j,$(MAKEFLAGS))" O=$(O) subdir=tools -C $(src)/tools/
 
 tools/%: FORCE
 	$(Q)mkdir -p $(objtree)/tools
-	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS="$(filter --j% -j,$(MAKEFLAGS))" O=$(shell cd $(objtree) && /bin/pwd) subdir=tools -C $(src)/tools/ $*
+	$(Q)$(MAKE) LDFLAGS= MAKEFLAGS="$(filter --j% -j,$(MAKEFLAGS))" O=$(O) subdir=tools -C $(src)/tools/ $*
 
 # Single targets
 # ---------------------------------------------------------------------------
