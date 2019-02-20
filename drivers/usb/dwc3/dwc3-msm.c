@@ -319,7 +319,7 @@ static  int oem_test_id(int nr, const volatile unsigned long *addr, enum usb_otg
 	} else {
 		ret = test_bit(nr, addr);
 	}
-	printk("oem_test_id ret:%d, otg_switch:%d, otg_state:%d\n", ret, otg_switch, otg_state);
+	pr_debug("oem_test_id ret:%d, otg_switch:%d, otg_state:%d\n", ret, otg_switch, otg_state);
 	return ret;
 }
 
