@@ -1013,7 +1013,7 @@ static void msm_pinctrl_resume(void)
 			else if (desc->action && desc->action->name)
 				name = desc->action->name;
 
-			pr_warn("%s: %d triggered %s\n", __func__, irq, name);
+			pr_debug("%s: %d triggered %s\n", __func__, irq, name);
 		}
 	}
 	spin_unlock_irqrestore(&pctrl->lock, flags);
