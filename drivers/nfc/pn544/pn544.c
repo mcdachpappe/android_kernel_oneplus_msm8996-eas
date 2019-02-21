@@ -1026,7 +1026,7 @@ static int pn544_suspend(struct i2c_client *client, pm_message_t message)
 {   
 	struct pn544_dev *pn544_dev = i2c_get_clientdata(client);
 	
-	pr_warn("%s pn544_dev->clk_gpio = %d, pn544_dev->irq_gpio = %d\n",
+	pr_debug("%s pn544_dev->clk_gpio = %d, pn544_dev->irq_gpio = %d\n",
 		__func__,
 		gpio_get_value(pn544_dev->clk_gpio),
 		gpio_get_value(pn544_dev->irq_gpio));	
