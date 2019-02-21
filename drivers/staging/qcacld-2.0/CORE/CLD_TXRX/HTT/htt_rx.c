@@ -1373,7 +1373,7 @@ htt_rx_offload_paddr_msdu_pop_ll(
         if (HTT_RX_IN_ORD_PADDR_IND_MSDU_INFO_GET(*(curr_msdu + 1)) &
                           FW_MSDU_INFO_FIRST_WAKEUP_M) {
             adf_nbuf_update_skb_mark(buf, HTT_MARK_FIRST_WAKEUP_PACKET);
-            adf_os_print("%s: First packet after WOW Wakeup rcvd\n", __func__);
+	    /* adf_os_print("%s: First packet after WOW Wakeup rcvd\n", __func__); */
         }
     }
 
