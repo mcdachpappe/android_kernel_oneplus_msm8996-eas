@@ -1,8 +1,8 @@
 VERSION = 3
 PATCHLEVEL = 18
 SUBLEVEL = 137
-EXTRAVERSION = -HolyDragon-v0.8
-NAME = Fafnir
+EXTRAVERSION =
+NAME = Diseased Newt
 
 # *DOCUMENTATION*
 # To see a list of typical targets execute "make help"
@@ -249,8 +249,8 @@ SUBARCH := $(shell uname -m | sed -e s/i.86/x86/ -e s/x86_64/x86/ \
 # Note: Some architectures assign CROSS_COMPILE in their arch/*/Makefile
 ARCH		?= $(SUBARCH)
 CROSS_COMPILE	?= $(CONFIG_CROSS_COMPILE:"%"=%)
-HDK		:= /home/holyangel/android/Toolchains/sdclang-6.0.9_L6.4.1/
-HDK_TC		:= /home/holyangel/android/Toolchains/sdclang-6.0.9_L6.4.1/bin/
+HDK		:= /home/danny/eas/Toolchains/sdclang-lin6.4.2/
+HDK_TC		:= /home/danny/eas/Toolchains/sdclang-lin6.4.2/bin/
 ARCH		:= arm64
 SUBARCH		:= arm64
 CROSS_COMPILE	:= $(HDK_TC)aarch64-cortex_a57-linux-android-
@@ -301,7 +301,7 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 
 # HolyDragon Optimization Flags #
 
-# Specific GCC Optimizations	  
+# Specific GCC Optimizations
 EXTRA_OPTS := \
 	-falign-loops=1 -falign-functions=1 -falign-labels=1 -falign-jumps=1 \
 	-fira-hoist-pressure -fira-loop-pressure -fno-inline-small-functions \
@@ -325,25 +325,25 @@ CLANG_ARCH_OPT := \
 # Optional Flags
 GEN_OPT_FLAGS := \
  -DNDEBUG -g0 -pipe \
- -fomit-frame-pointer 
+ -fomit-frame-pointer
 
 LLVM_FLAGS := \
  -mllvm -polly -mllvm -polly-optimized-scops -mllvm -polly-process-unprofitable \
  -mllvm -polly-vectorizer=stripmine -mllvm -polly-tiling=false
 
-#Targetting Options
+# Targetting Options
 LTO_TRIPLE = $(HDK_TC)lto-	
 LLVM_TRIPLE = $(HDK_TC)llvm-
 CLANG_TRIPLE = $(HDK_TC)clang $(CLANG_ARCH_OPT) $(LLVM_FLAGS) -flto --sysroot=$(HDK) --gcc-toolchain=$(CROSS_COMPILE)gcc
 CPP_TRIPLE = $(HDK_TC)clang++ $(CLANG_ARCH_OPT) $(LLVM_FLAGS) -Ofast -flto --sysroot=$(HDK) --gcc-toolchain=$(CROSS_COMPILE)gcc
 
-#Clang specific compatibility
+# Clang specific compatibility
 CLANG_IA_FLAG += -no-integrated-as
 
 #########
 
-HOSTCC       = gcc
-HOSTCXX      = g++
+HOSTCC       = $(CCACHE)gcc
+HOSTCXX      = $(CCACHE)g++
 HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89 $(GEN_OPT_FLAGS) $(EXTRA_OPTS)
 HOSTCXXFLAGS = -O2 $(GEN_OPT_FLAGS) $(EXTRA_OPTS) -fdeclone-ctor-dtor
 
@@ -400,7 +400,7 @@ include $(srctree)/scripts/Kbuild.include
 
 # Make variables (CC, etc...)
 AS		= $(CROSS_COMPILE)as
-LD		= $(HDK_TC)ld.lld -m aarch64linux --strip-debug --lto-O3 
+LD		= $(HDK_TC)ld.lld -m aarch64linux --strip-debug --lto-O3
 CC		= $(CROSS_COMPILE)gcc -g0
 CPP		= $(CPP_TRIPLE) -E -flto
 AR		= $(LLVM_TRIPLE)ar
@@ -448,7 +448,7 @@ KBUILD_CPPFLAGS := -D__KERNEL__
 KBUILD_CFLAGS   := -Werror -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
-		   -Wno-format-security -Wno-bool-compare \
+		   -Wno-format-security -Wno-bool-compare -Wno-unused-variable \
 		   -std=gnu89 \
 		   $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS)
 
@@ -670,10 +670,10 @@ KBUILD_CFLAGS	+= $(call cc-disable-warning,frame-address,)
 KBUILD_CFLAGS	+= $(call cc-disable-warning,format-truncation)
 KBUILD_CFLAGS	+= $(call cc-disable-warning,format-overflow)
 KBUILD_CFLAGS	+= $(call cc-disable-warning,int-in-bool-context)
-KBUILD_CFLAGS	+= $(call cc-disable-warning, attribute-alias)
+KBUILD_CFLAGS	+= $(call cc-disable-warning,attribute-alias)
 KBUILD_CFLAGS	+= $(call cc-disable-warning,logical-not-parentheses)
 KBUILD_CFLAGS	+= $(call cc-disable-warning,misleading-indentation)
-#KBUILD_CFLAGS	+= $(call cc-disable-warning,maybe-uninitialized)
+KBUILD_CFLAGS	+= $(call cc-disable-warning,maybe-uninitialized)
 KBUILD_CFLAGS	+= $(call cc-option,-fno-PIE)
 KBUILD_AFLAGS	+= $(call cc-option,-fno-PIE)
 
@@ -1269,7 +1269,8 @@ MRPROPER_FILES += .config .config.old .version .old_version $(version_h) \
 		  Module.symvers tags TAGS cscope* GPATH GTAGS GRTAGS GSYMS \
 		  signing_key.priv signing_key.x509 x509.genkey		\
 		  extra_certificates signing_key.x509.keyid		\
-		  signing_key.x509.signer include/linux/version.h
+		  signing_key.x509.signer include/linux/version.h	\
+		  drivers/platform/msm/ipa/ipa_common
 
 # clean - Delete most, but leave enough to build external modules
 #
