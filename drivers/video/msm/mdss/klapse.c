@@ -32,7 +32,6 @@ static unsigned int target_minute; // <-- Masked as tunable by using klapse_scal
  *WARNING : DO NOT MAKE THEM TUNABLE
  */
 static unsigned int b_cache;
-static unsigned int klapse_red, klapse_green, klapse_blue;
 static unsigned int current_r, current_g, current_b;
 static unsigned int klapse_scaling_rate, active_minutes, last_bl;
 static unsigned long local_time;
@@ -94,11 +93,13 @@ static int get_minutes_before_stop(void)
 
 static void set_rgb(int r, int g, int b)
 {
-    klapse_red = r;
-    klapse_green = g;
-    klapse_blue = b;
-
-    kcal_klapse_push(r, g, b);
+#if KLAPSE_MDSS
+    klapse_kcal_push(r,g,b);
+#else
+    K_RED = r;
+    K_GREEN = g;
+    K_BLUE = b;
+#endif
 
     current_r = r;
     current_g = g;
@@ -217,7 +218,7 @@ static void klapse_pulse(unsigned long data)
     }
     else
     {
-        set_rgb_brightness(klapse_red, klapse_green, klapse_blue);
+        set_rgb_brightness(K_RED, K_GREEN, K_BLUE);
     }
     
     if (!timer_pending(&pulse_timer))
@@ -652,25 +653,25 @@ static ssize_t brightness_factor_dump(struct kobject *kobj,
             if (enable_klapse == 1)         // Pulse is already running, for thread-safety, stop it and then modify RGB
             {
                 flush_timer();
-                set_rgb_brightness((klapse_red*10)/b_cache, (klapse_green*10)/b_cache, (klapse_blue*10)/b_cache);
+                set_rgb_brightness((K_RED*10)/b_cache, (K_GREEN*10)/b_cache, (K_BLUE*10)/b_cache);
                 b_cache = tmpval;
                 klapse_pulse(0);
             }
             else        // Means pulse isn't running
             {
-                set_rgb_brightness((klapse_red*10)/b_cache, (klapse_green*10)/b_cache, (klapse_blue*10)/b_cache);
+                set_rgb_brightness((K_RED*10)/b_cache, (K_GREEN*10)/b_cache, (K_BLUE*10)/b_cache);
                 b_cache = tmpval;
                 brightness_factor = tmpval;
                 if (enable_klapse == 2)
                     set_rgb_slider(last_bl);
                 else
-                    set_rgb_brightness(klapse_red, klapse_green, klapse_blue);
+                    set_rgb_brightness(K_RED, K_GREEN, K_BLUE);
             }
         }
         else
         {
             flush_timer();
-            set_rgb_brightness((klapse_red*10)/brightness_factor, (klapse_green*10)/brightness_factor, (klapse_blue*10)/brightness_factor);
+            set_rgb_brightness((K_RED*10)/brightness_factor, (K_GREEN*10)/brightness_factor, (K_BLUE*10)/brightness_factor);
             b_cache = tmpval;
             klapse_pulse(0);
         }
@@ -712,7 +713,7 @@ static ssize_t brightness_factor_auto_enable_dump(struct kobject *kobj,
                 if (enable_klapse == 1)         // Pulse is already running, for thread-safety, stop it and then modify RGB
                     flush_timer();
                     
-                set_rgb_brightness((klapse_red*10)/b_cache, (klapse_green*10)/b_cache, (klapse_blue*10)/b_cache);
+                set_rgb_brightness((K_RED*10)/b_cache, (K_GREEN*10)/b_cache, (K_BLUE*10)/b_cache);
                 brightness_factor_auto_enable = tmpval;
                 klapse_pulse(0);
                 return count;
@@ -720,12 +721,12 @@ static ssize_t brightness_factor_auto_enable_dump(struct kobject *kobj,
             else    // Guarantees that pulse is on, and RGB is reduced, and tmpval is 0
             {
                 flush_timer();
-                set_rgb_brightness((klapse_red*10)/brightness_factor, (klapse_green*10)/brightness_factor, (klapse_blue*10)/brightness_factor);
+                set_rgb_brightness((K_RED*10)/brightness_factor, (K_GREEN*10)/brightness_factor, (K_BLUE*10)/brightness_factor);
                 brightness_factor_auto_enable = tmpval;
                 if (enable_klapse == 1)
                   klapse_pulse(0);
                 else
-                  set_rgb_brightness(klapse_red, klapse_green, klapse_blue);
+                  set_rgb_brightness(K_RED, K_GREEN, K_BLUE);
                 return count;
             }
         }
@@ -741,7 +742,7 @@ static ssize_t brightness_factor_auto_enable_dump(struct kobject *kobj,
             else if (tmpval == 0) // Stop pulse anyways
             {
                 flush_timer();
-                set_rgb_brightness(klapse_red, klapse_green, klapse_blue);
+                set_rgb_brightness(K_RED, K_GREEN, K_BLUE);
             }
         }
     }
