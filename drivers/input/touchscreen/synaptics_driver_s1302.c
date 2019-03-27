@@ -700,7 +700,7 @@ static void int_key(struct synaptics_ts_data *ts )
 
     button_key = synaptics_rmi4_i2c_read_byte(ts->client,0x00);
     if (6 == (++log_count % 12))
-        TPD_ERR("touch_key[0x%x],touchkey_state[0x%x]\n",button_key,ts->pre_btn_state);
+        //TPD_ERR("touch_key[0x%x],touchkey_state[0x%x]\n",button_key,ts->pre_btn_state);
     if (!is_report_key)
         return;
     if((button_key & 0x01) && !(ts->pre_btn_state & 0x01))//back
