@@ -2413,7 +2413,9 @@ static void dwc3_ext_event_notify(struct dwc3_msm *mdwc)
 		return;
 	}
 
+#ifndef CONFIG_MACH_MSM8996_15801
 	pm_stay_awake(mdwc->dev);
+#endif
 	queue_delayed_work(mdwc->sm_usb_wq, &mdwc->sm_work, 0);
 }
 
@@ -2535,7 +2537,9 @@ static irqreturn_t msm_dwc3_pwr_irq(int irq, void *data)
 	 * all other power events.
 	 */
 	if (atomic_read(&dwc->in_lpm)) {
+#ifndef CONFIG_MACH_MSM8996_15801
 		if (!mdwc->no_wakeup_src_in_hostmode || !mdwc->in_host_mode)
+#endif
 			pm_stay_awake(mdwc->dev);
 
 		/* set this to call dwc3_msm_resume() */
@@ -2613,7 +2617,9 @@ static int dwc3_msm_power_set_property_usb(struct power_supply *psy,
 		dbg_event(0xFF, "id_state", mdwc->id_state);
 		if (dwc->is_drd) {
 			dbg_event(0xFF, "stayID", 0);
+#ifndef CONFIG_MACH_MSM8996_15801
 			pm_stay_awake(mdwc->dev);
+#endif
 			queue_delayed_work(mdwc->dwc3_resume_wq,
 					&mdwc->resume_work, 0);
 		}
@@ -2653,7 +2659,9 @@ static int dwc3_msm_power_set_property_usb(struct power_supply *psy,
 			dbg_event(0xFF, "stayVbus", 0);
 			/* Ignore !vbus on stop_host */
 			if (mdwc->vbus_active || test_bit(ID, &mdwc->inputs)) {
+#ifndef CONFIG_MACH_MSM8996_15801
 				pm_stay_awake(mdwc->dev);
+#endif
 				queue_delayed_work(mdwc->dwc3_resume_wq,
 					&mdwc->resume_work, 0);
 			}
@@ -2775,7 +2783,9 @@ static irqreturn_t dwc3_pmic_id_irq(int irq, void *data)
 	if (mdwc->id_state != id) {
 		mdwc->id_state = id;
 		dbg_event(0xFF, "stayIDIRQ", 0);
+#ifndef CONFIG_MACH_MSM8996_15801
 		pm_stay_awake(mdwc->dev);
+#endif
 		queue_delayed_work(mdwc->dwc3_resume_wq, &mdwc->resume_work, 0);
 	}
 
@@ -4289,9 +4299,11 @@ static void dwc3_msm_otg_sm_work(struct work_struct *w)
 			dbg_event(0xFF, "XHCIResume", 0);
 			if (dwc)
 				pm_runtime_resume(&dwc->xhci->dev);
+#ifndef CONFIG_MACH_MSM8996_15801
 			if (mdwc->no_wakeup_src_in_hostmode)
 				pm_wakeup_event(mdwc->dev,
 						DWC3_WAKEUP_SRC_TIMEOUT);
+#endif
 		}
 		break;
 
