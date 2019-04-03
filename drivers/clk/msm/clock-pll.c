@@ -251,7 +251,7 @@ static int sr2_pll_clk_enable(struct clk *c)
 	}
 
 	if (!(readl_relaxed(PLL_STATUS_REG(pll)) & lockmask))
-		pr_err("PLL %s didn't lock after enabling it!\n", c->dbg_name);
+		pr_debug("PLL %s didn't lock after enabling it!\n", c->dbg_name);
 
 	/* Enable PLL output. */
 	mode |= PLL_OUTCTRL;
@@ -517,7 +517,7 @@ static int variable_rate_pll_clk_enable_hwfsm(struct clk *c)
 	}
 
 	if (!(readl_relaxed(PLL_STATUS_REG(pll)) & lockmask))
-		pr_err("PLL %s didn't lock after enabling it!\n", c->dbg_name);
+		pr_debug("PLL %s didn't lock after enabling it!\n", c->dbg_name);
 
 	spin_unlock_irqrestore(&pll_reg_lock, flags);
 
@@ -806,7 +806,7 @@ int sr_hpm_lp_pll_clk_enable(struct clk *c)
 	}
 
 	if (!(readl_relaxed(PLL_STATUS_REG(pll)) & PLL_LOCKED_BIT)) {
-		WARN("PLL %s didn't lock after enabling it!\n", c->dbg_name);
+		//WARN("PLL %s didn't lock after enabling it!\n", c->dbg_name);
 		ret = -ETIMEDOUT;
 		goto out;
 	}
