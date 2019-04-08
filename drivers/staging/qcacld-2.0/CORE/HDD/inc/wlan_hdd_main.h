@@ -343,26 +343,11 @@ struct linkspeedContext
    unsigned int magic;
 };
 
-/**
- * struct random_mac_context - Context used with hdd_random_mac_callback
- * @random_mac_completion: Event on which hdd_set_random_mac will wait
- * @adapter: Pointer to adapter
- * @magic: For valid context this is set to ACTION_FRAME_RANDOM_CONTEXT_MAGIC
- * @set_random_addr: Status of random filter set
- */
-struct random_mac_context {
-	struct completion random_mac_completion;
-	hdd_adapter_t *adapter;
-	unsigned int magic;
-	bool set_random_addr;
-};
-
 extern spinlock_t hdd_context_lock;
 
 #define STATS_CONTEXT_MAGIC 0x53544154   //STAT
 #define PEER_INFO_CONTEXT_MAGIC  0x52535349   /* PEER_INFO */
 #define POWER_CONTEXT_MAGIC 0x504F5752   //POWR
-#define SNR_CONTEXT_MAGIC   0x534E5200   //SNR
 #define LINK_CONTEXT_MAGIC  0x4C494E4B   //LINKSPEED
 #define LINK_STATUS_MAGIC   0x4C4B5354   //LINKSTATUS(LNST)
 #define TEMP_CONTEXT_MAGIC 0x74656d70   // TEMP (temperature)
@@ -800,6 +785,8 @@ struct hdd_station_ctx
 
    /**Connection information*/
    connection_info_t conn_info;
+
+   connection_info_t cache_conn_info;
 
    roaming_info_t roam_info;
 
@@ -1360,6 +1347,10 @@ struct hdd_adapter_s
 #endif /* WLAN_FEATURE_TSF_PLUS */
 #endif
 
+#ifdef WLAN_FEATURE_MOTION_DETECTION
+   uint8_t motion_detection_mode;
+#endif
+
    hdd_cfg80211_state_t cfg80211State;
 
 #ifdef WLAN_FEATURE_PACKET_FILTERING
@@ -1429,11 +1420,6 @@ struct hdd_adapter_s
     /* Time stamp for start RoC request */
     v_TIME_t startRocTs;
 
-    /* State for synchronous OCB requests to WMI */
-    struct sir_ocb_set_config_response ocb_set_config_resp;
-    struct sir_ocb_get_tsf_timer_response ocb_get_tsf_timer_resp;
-    struct sir_dcc_get_stats_response *dcc_get_stats_resp;
-    struct sir_dcc_update_ndl_response dcc_update_ndl_resp;
     struct dsrc_radio_chan_stats_ctxt dsrc_chan_stats;
 #ifdef WLAN_FEATURE_DSRC
     /* MAC addresses used for OCB interfaces */
@@ -1456,11 +1442,16 @@ struct hdd_adapter_s
     struct hdd_netif_queue_history
             queue_oper_history[WLAN_HDD_MAX_HISTORY_ENTRY];
     struct hdd_netif_queue_stats queue_oper_stats[WLAN_REASON_TYPE_MAX];
-    struct power_stats_response *chip_power_stats;
 
     /* random address management for management action frames */
     spinlock_t random_mac_lock;
     struct action_frame_random_mac random_mac[MAX_RANDOM_MAC_ADDRS];
+    /*
+     * Store the restrict_offchannel count
+     * to cater to multiple application.
+     */
+    uint8_t restrict_offchannel_cnt;
+
 };
 
 #define WLAN_HDD_GET_STATION_CTX_PTR(pAdapter) (&(pAdapter)->sessionCtx.station)
@@ -1735,6 +1726,21 @@ struct hdd_scan_chan_info {
 	uint32_t clock_freq;
 };
 
+#ifdef WLAN_FEATURE_SAP_TO_FOLLOW_STA_CHAN
+typedef struct sap_ch_switch_with_csa_ctx
+{
+    v_BOOL_t is_ch_sw_through_sta_csa;
+    u_int8_t tbtt_count;
+    v_U8_t csa_to_channel; //channel on which SAP will move after sending CSA
+    v_U8_t sap_chan_sw_pending; //SAP channel switch pending after STA disconnect
+    vos_timer_t hdd_ap_chan_switch_timer; //timer to init SAP chan switch
+    v_BOOL_t chan_sw_timer_initialized;
+    v_U8_t def_csa_channel_on_disc;
+    v_BOOL_t scan_only_dfs_channels;
+    struct mutex sap_ch_sw_lock; //Synchronize access to sap_chan_sw_pending
+}sap_ch_switch_ctx;
+#endif
+
 /** Adapter stucture definition */
 
 struct hdd_context_s
@@ -1826,6 +1832,7 @@ struct hdd_context_s
 
    v_BOOL_t hdd_wlan_suspended;
    v_BOOL_t suspended;
+   bool prevent_suspend;
 
    spinlock_t filter_lock;
 
@@ -1936,11 +1943,6 @@ struct hdd_context_s
 
     /* debugfs entry */
     struct dentry *debugfs_phy;
-
-#ifdef WLAN_POWER_DEBUGFS
-    /* mutex lock to block concurrent access */
-    struct mutex power_stats_lock;
-#endif
 
     /* Use below lock to protect access to isSchedScanUpdatePending
      * since it will be accessed in two different contexts.
@@ -2134,6 +2136,17 @@ struct hdd_context_s
     /* flag to show whether moniotr mode is enabled */
     bool is_mon_enable;
     v_MACADDR_t hw_macaddr;
+#ifdef WLAN_FEATURE_SAP_TO_FOLLOW_STA_CHAN
+    sap_ch_switch_ctx  ch_switch_ctx;
+#endif//#ifdef WLAN_FEATURE_SAP_TO_FOLLOW_CHAN
+#ifdef FEATURE_WLAN_CH_AVOID
+    tHddAvoidFreqList dnbs_avoid_freq_list;
+    /* Lock to control access to dnbs avoid freq list */
+    struct mutex avoid_freq_lock;
+#endif
+    spinlock_t restrict_offchan_lock;
+    bool  restrict_offchan_flag;
+
 };
 
 /*---------------------------------------------------------------------------
@@ -2706,4 +2719,21 @@ hdd_wlan_nla_put_u64(struct sk_buff *skb, int attrtype, u64 value)
 				 QCA_WLAN_VENDOR_ATTR_LL_STATS_PAD);
 }
 #endif
+
+/**
+ * hdd_chan_change_notify() - Function to notify cfg80211 about channel change
+ * @adapter: adapter
+ * @dev: Net device structure
+ * @oper_chan: New operating channel
+ * @eCsrPhyMode: phy mode
+ *
+ * This function is used to notify cfg80211 about the channel change
+ *
+ * Return: Success on intimating userspace
+ *
+ */
+VOS_STATUS hdd_chan_change_notify(hdd_adapter_t *adapter,
+				  struct net_device *dev,
+				  uint8_t oper_chan,
+				  eCsrPhyMode phy_mode);
 #endif    // end #if !defined( WLAN_HDD_MAIN_H )
