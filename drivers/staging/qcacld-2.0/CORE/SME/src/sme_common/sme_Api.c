@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2019 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -77,6 +77,8 @@
 #include "sme_nan_datapath.h"
 #include "csrApi.h"
 #include "utilsApi.h"
+#include "cfgApi.h"
+#include "limUtils.h"
 
 extern tSirRetStatus uMacPostCtrlMsg(void* pSirGlobal, tSirMbMsg* pMb);
 
@@ -1693,37 +1695,36 @@ eHalStatus sme_SetPlmRequest(tHalHandle hHal, tpSirPlmReq pPlmReq)
         }
 
         if (pPlmReq->enable) {
-
            /* validating channel numbers */
-           for (count = 0; count < pPlmReq->plmNumCh; count++) {
-
-              ret = csrIsSupportedChannel(pMac, pPlmReq->plmChList[count]);
-              if (ret && pPlmReq->plmChList[count] > 14)
-              {
-                  if (NV_CHANNEL_DFS ==
-                       vos_nv_getChannelEnabledState(pPlmReq->plmChList[count]))
+           if(pPlmReq->plmNumCh < WNI_CFG_VALID_CHANNEL_LIST_LEN) {
+               for (count = 0; count < pPlmReq->plmNumCh; count++) {
+                  ret = csrIsSupportedChannel(pMac, pPlmReq->plmChList[count]);
+                  if (ret && pPlmReq->plmChList[count] > 14)
                   {
-                      /* DFS channel is provided, no PLM bursts can be
-                      * transmitted. Ignoring these channels.
-                      */
-                      VOS_TRACE(VOS_MODULE_ID_SME, VOS_TRACE_LEVEL_INFO,
-                                "%s DFS channel %d ignored for PLM", __func__,
-                                pPlmReq->plmChList[count]);
-                      continue;
+                      if (NV_CHANNEL_DFS ==
+                           vos_nv_getChannelEnabledState(pPlmReq->plmChList[count]))
+                      {
+                          /* DFS channel is provided, no PLM bursts can be
+                          * transmitted. Ignoring these channels.
+                          */
+                          VOS_TRACE(VOS_MODULE_ID_SME, VOS_TRACE_LEVEL_INFO,
+                                    "%s DFS channel %d ignored for PLM", __func__,
+                                    pPlmReq->plmChList[count]);
+                          continue;
+                      }
                   }
-              }
-              else if (!ret)
-              {
-                   /* Not supported, ignore the channel */
-                   VOS_TRACE(VOS_MODULE_ID_SME, VOS_TRACE_LEVEL_INFO,
-                             "%s Unsupported channel %d ignored for PLM",
-                             __func__, pPlmReq->plmChList[count]);
-                   continue;
-              }
-              ch_list[valid_count] = pPlmReq->plmChList[count];
-              valid_count++;
-           } /* End of for () */
-
+                  else if (!ret)
+                  {
+                       /* Not supported, ignore the channel */
+                       VOS_TRACE(VOS_MODULE_ID_SME, VOS_TRACE_LEVEL_INFO,
+                                 "%s Unsupported channel %d ignored for PLM",
+                                 __func__, pPlmReq->plmChList[count]);
+                       continue;
+                  }
+                  ch_list[valid_count] = pPlmReq->plmChList[count];
+                  valid_count++;
+               } /* End of for () */
+           }
            /* Copying back the valid channel list to plm struct */
            vos_mem_set((void *)pPlmReq->plmChList, pPlmReq->plmNumCh, 0);
            if (valid_count)
@@ -2334,6 +2335,35 @@ eHalStatus sme_handle_cc_change_ind(tHalHandle hal_ptr, void *msg_buf)
 						 &domainId, COUNTRY_IE);
 
 	return (status);
+}
+
+eHalStatus sme_handle_update_pwr_ind(tHalHandle hal_ptr, uint32_t pesession_id)
+{
+	tpAniSirGlobal mac_ptr = PMAC_STRUCT(hal_ptr);
+	tpPESession pesession_ptr =
+		peFindSessionBySessionId(mac_ptr, pesession_id);
+	tPowerdBm regMax = 0,maxTxPower = 0;
+
+	if (pesession_ptr == NULL)
+		return eHAL_STATUS_FAILURE;
+
+	regMax =
+	  cfgGetRegulatoryMaxTransmitPower(mac_ptr,
+					   pesession_ptr->currentOperChannel);
+	maxTxPower = VOS_MIN(regMax, mac_ptr->roam.configParam.nTxPowerCap);
+	VOS_TRACE(VOS_MODULE_ID_SME, VOS_TRACE_LEVEL_INFO,
+		  "updating new maxTx power %d to HAL from old pwr %d",
+		  maxTxPower, pesession_ptr->maxTxPower);
+	if(limSendSetMaxTxPowerReq(mac_ptr,
+				   maxTxPower,
+				   pesession_ptr) == eSIR_SUCCESS)
+		pesession_ptr->maxTxPower = maxTxPower;
+	else {
+		VOS_TRACE(VOS_MODULE_ID_SME, VOS_TRACE_LEVEL_ERROR,
+			  "Set max txpwr req fail");
+	}
+
+	return eHAL_STATUS_SUCCESS;
 }
 
 /*--------------------------------------------------------------------------
@@ -3003,6 +3033,9 @@ eHalStatus sme_ProcessMsg(tHalHandle hHal, vos_msg_t* pMsg)
                    smsLog(pMac, LOGE, "Empty rsp message for meas "
                           "(eWNI_SME_CC_CHANGE_IND), nothing to process");
                 }
+                break;
+          case eWNI_SME_UPDATE_PWR_IND:
+                status = sme_handle_update_pwr_ind(pMac,pMsg->bodyval);
                 break;
           case eWNI_SME_POST_SWITCH_CHL_IND:
              {
@@ -9857,6 +9890,7 @@ eHalStatus sme_WakeReasonIndCallback (tHalHandle hHal, void* pMsg)
 eHalStatus sme_SetMaxTxPowerPerBand(eCsrBand band, v_S7_t dB,
                   tHalHandle hal)
 {
+	vos_msg_t msg;
 	eHalStatus status;
 	tSmeCmd *set_max_tx_pwr_per_band;
 	tpAniSirGlobal mac_ctx = PMAC_STRUCT(hal);
@@ -9870,6 +9904,9 @@ eHalStatus sme_SetMaxTxPowerPerBand(eCsrBand band, v_S7_t dB,
 	smsLog(mac_ctx, LOG1,
 		  FL("band : %d power %d dB"),
 		  band, dB);
+
+	MTRACE(vos_trace(VOS_MODULE_ID_SME,
+			TRACE_CODE_SME_TX_WDA_MSG, NO_SESSION, msg.type));
 
 	status = sme_AcquireGlobalLock(&mac_ctx->sme);
 	if (HAL_STATUS_SUCCESS(status)) {
@@ -18110,6 +18147,42 @@ VOS_STATUS sme_mnt_filter_type_cmd(struct sme_mnt_filter_type_req *input)
 #define THROTTLE_TX_THRESHOLD_MIN  (1)
 #define THROTTLE_TX_THRESHOLD_MAX  (400)
 #define MAX_DUTY_CYCLE_VAL         (100)
+
+eHalStatus sme_hpcs_pulse_params_conf_cmd(tHalHandle hHal,
+                                          tSirHpcsPulseParmasConfig *pHpcsPulseParams)
+{
+    vos_msg_t msg;
+    struct hal_hpcs_pulse_params *hpcs_pulse_params;
+
+    hpcs_pulse_params = vos_mem_malloc(sizeof(*hpcs_pulse_params));
+    if (!hpcs_pulse_params) {
+        VOS_TRACE(VOS_MODULE_ID_SME, VOS_TRACE_LEVEL_ERROR,
+                  FL("Unable to allocate memory"));
+        return eHAL_STATUS_FAILED_ALLOC;
+    }
+
+    vos_mem_zero(hpcs_pulse_params, sizeof(*hpcs_pulse_params));
+
+    hpcs_pulse_params->vdev_id            = pHpcsPulseParams->vdev_id;
+    hpcs_pulse_params->start              = pHpcsPulseParams->start;
+    hpcs_pulse_params->sync_time          = pHpcsPulseParams->sync_time;
+    hpcs_pulse_params->pulse_interval     = pHpcsPulseParams->pulse_interval;
+    hpcs_pulse_params->active_sync_period = pHpcsPulseParams->active_sync_period;
+    hpcs_pulse_params->gpio_pin           = pHpcsPulseParams->gpio_pin;
+    hpcs_pulse_params->pulse_width        = pHpcsPulseParams->pulse_width;
+
+    msg.type = WDA_SET_HPCS_PULSE_PARAMS;
+    msg.reserved = 0;
+    msg.bodyptr = hpcs_pulse_params;
+
+    if (VOS_STATUS_SUCCESS != vos_mq_post_message(VOS_MODULE_ID_WDA, &msg)) {
+        VOS_TRACE(VOS_MODULE_ID_SME, VOS_TRACE_LEVEL_ERROR,
+                  FL("Unable to post WMI_HPCS_PULSE_START_CMDID message"));
+        vos_mem_free(hpcs_pulse_params);
+        return eHAL_STATUS_FAILURE;
+    }
+    return eHAL_STATUS_SUCCESS;
+}
 
 eHalStatus sme_thermal_throttle_mgmt_cmd(tHalHandle hHal, tANI_U16 lower_thresh_deg,
                                          tANI_U16 higher_thresh_deg)

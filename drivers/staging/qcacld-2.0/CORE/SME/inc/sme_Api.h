@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2019 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -4899,7 +4899,7 @@ typedef struct {
 							  for success case in coarse detection*/
 	uint32_t fine_Q;                              /** number of times motion is expected to be detected
 							  for success case in fine detection*/
-	uint8_t md_coarse_thr_high;                  /** higher threshold value (in percent)
+	uint32_t md_coarse_thr_high;                  /** higher threshold value (in percent)
                                                           from host to FW, which will be used in
                                                           coarse detection phase of motion detection.
                                                           This is the threshold for the correlation
@@ -4908,19 +4908,19 @@ typedef struct {
                                                           environment.  A value of 100(%) indicates
                                                           that neither the transceiver nor any
                                                           nearby objects have changed position. */
-	uint8_t md_fine_thr_high;                    /** higher threshold value (in percent)
+	uint32_t md_fine_thr_high;                    /** higher threshold value (in percent)
 	                                                  from host to FW, which will be used in
 	                                                  fine detection phase of motion detection.
 	                                                  This is the threshold for correlation
                                                           between the old and current RF environments,
                                                           as explained above. */
-	uint8_t md_coarse_thr_low;                   /** lower threshold value (in percent)
+	uint32_t md_coarse_thr_low;                   /** lower threshold value (in percent)
                                                           for immediate detection of motion in
                                                           coarse detection phase.
                                                           This is the threshold for correlation
                                                           between the old and current RF environments,
                                                           as explained above. */
-	uint8_t md_fine_thr_low;                     /** lower threshold value (in percent)
+	uint32_t md_fine_thr_low;                     /** lower threshold value (in percent)
                                                           for immediate detection of motion in
                                                           fine detection phase.
                                                           This is the threshold for correlation
@@ -4973,4 +4973,20 @@ eHalStatus sme_thermal_throttle_mgmt_cmd(tHalHandle hHal, tANI_U16 lower_thresh_
  */
 uint32_t sme_unpack_rsn_ie(tHalHandle hal, uint8_t *buf,
                         uint8_t buf_len, tDot11fIERSN *rsn_ie);
+
+typedef struct {
+	uint32_t vdev_id;              /* Vdev ID */
+	uint32_t start;                /* Start/Stop */
+	uint32_t sync_time;            /* Lower 32-bit of the TSF at which the
+                                        * pulse should be synced */
+	uint32_t pulse_interval;       /* Periodicity of pulses in micro secs */
+	uint32_t active_sync_period;   /* Number of beacons to sync before generating
+                                        * pulse in units of beacon interval.
+                                        * Valid for clock slaves only */
+	uint32_t gpio_pin;             /* GPIO Pin number to be used */
+	uint32_t pulse_width;          /* Duration of pulse in micro secs */
+} tSirHpcsPulseParmasConfig;
+
+eHalStatus sme_hpcs_pulse_params_conf_cmd(tHalHandle hHal, tSirHpcsPulseParmasConfig *pHpcsPulseParams);
+
 #endif //#if !defined( __SME_API_H )

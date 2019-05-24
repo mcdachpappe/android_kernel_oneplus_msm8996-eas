@@ -638,7 +638,6 @@ tSirRetStatus uMacPostCtrlMsg(void* pSirGlobal, tSirMbMsg* pMb);
 #define WDA_UPDATE_STARATEINFO_RSP     SIR_HAL_UPDATE_STARATEINFO_RSP
 
 #define WDA_UPDATE_BEACON_IND          SIR_HAL_UPDATE_BEACON_IND
-#define WDA_UPDATE_CF_IND              SIR_HAL_UPDATE_CF_IND
 #define WDA_CHNL_SWITCH_REQ            SIR_HAL_CHNL_SWITCH_REQ
 #define WDA_ADD_TS_REQ                 SIR_HAL_ADD_TS_REQ
 #define WDA_DEL_TS_REQ                 SIR_HAL_DEL_TS_REQ
@@ -1116,6 +1115,8 @@ tSirRetStatus uMacPostCtrlMsg(void* pSirGlobal, tSirMbMsg* pMb);
 #define WDA_SET_MOTION_DET_BASE_LINE_CONFIG   SIR_HAL_SET_MOTION_DET_BASE_LINE_CONFIG
 #define WDA_SET_MOTION_DET_BASE_LINE_ENABLE   SIR_HAL_SET_MOTION_DET_BASE_LINE_ENABLE
 #endif
+
+#define WDA_SET_HPCS_PULSE_PARAMS             SIR_HAL_SET_HPCS_PULSE_PARMAS
 
 tSirRetStatus wdaPostCtrlMsg(tpAniSirGlobal pMac, tSirMsgQ *pMsg);
 

@@ -130,7 +130,7 @@
 #define WMA_LOGP(args...) \
 	VOS_TRACE( VOS_MODULE_ID_WDA, VOS_TRACE_LEVEL_FATAL, ## args)
 
-#undef WMA_DEBUG_ALWAYS
+#define WMA_DEBUG_ALWAYS
 
 #ifdef WMA_DEBUG_ALWAYS
 #define WMA_LOGA(args...) \

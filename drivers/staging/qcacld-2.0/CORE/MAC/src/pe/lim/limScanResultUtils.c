@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2011-2018 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2011-2019 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -134,6 +134,22 @@ limDeactivateMinChannelTimerDuringScan(tpAniSirGlobal pMac)
     return eSIR_SUCCESS;
 } /*** end limDeactivateMinChannelTimerDuringScan() ***/
 
+void
+lim_update_max_txpower_ind(tpAniSirGlobal mac_ptr, tpPESession session_ptr)
+{
+	tSirMsgQ  mmh_msg;
+
+	limLog(mac_ptr, LOG1, FL("update max pwr in country code: %c%c"),
+	       mac_ptr->scan.countryCodeCurrent[0],
+	       mac_ptr->scan.countryCodeCurrent[1]);
+
+	mmh_msg.type = eWNI_SME_UPDATE_PWR_IND;
+	mmh_msg.bodyptr = NULL;
+	mmh_msg.bodyval = session_ptr->peSessionId;
+	limSysProcessMmhMsgApi(mac_ptr, &mmh_msg, ePROT);
+	return;
+}
+
 /**
  * lim_check_and_change_cc: indicate upper layer country code changed
  * @mac_ptr: Pointer to Global MAC structure
@@ -147,7 +163,6 @@ lim_check_and_change_cc(tpAniSirGlobal mac_ptr,
 			tpSirProbeRespBeacon beacon_ptr,
 			tpPESession session_ptr)
 {
-
 	tSirMsgQ  mmh_msg;
 	tANI_U16  msg_len = 0;
 	struct sme_change_country_code_ind *change_cc_ind_ptr = NULL;
