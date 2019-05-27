@@ -5,20 +5,20 @@
 ## AnyKernel setup
 # begin properties
 properties() { '
-kernel.string=### SkyDragon Kernel for OnePlus 7 Pro ###
+kernel.string=### HolyDragon Kernel for OnePlus 3/3T ###
 do.devicecheck=1
 do.modules=0
 do.cleanup=1
 do.cleanuponabort=0
-device.name1=OnePlus7Pro
-device.name2=guacamole
-device.name3=OnePlus 7 Pro
-device.name4=Guacamole
+device.name1=OnePlus3
+device.name2=oneplus3
+device.name3=OnePlus3T
+device.name4=oneplus3t
 '; } # end properties
 
 # shell variables
 block=boot;
-is_slot_device=1;
+is_slot_device=0;
 ramdisk_compression=auto;
 
 ## AnyKernel methods (DO NOT CHANGE)
@@ -46,3 +46,4 @@ fi;
 write_boot;
 
 ## end install
+
