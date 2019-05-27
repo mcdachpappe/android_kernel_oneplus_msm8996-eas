@@ -9,8 +9,8 @@ restore='\033[0m'
 ### Single run script for HolyDragon Kernel
 ############################################################
 
-# This is a cleanup and single run build script for testing purposes.
-# This does not zip anything for you, only executes a normal build. 
+# This is a single run build script for recompiling purposes if run.sh or build.sh fail.
+# This does not zip anything for you. 
 
 # Minimum requirements to build:
 # Already working build environment :P 
@@ -23,7 +23,7 @@ restore='\033[0m'
 # In Makefile: 
 # You will need to edit the 'CROSS_COMPILE=' line to match your current path to this source.
 # 
-# Once those are done, you should be able to execute './run.sh' from terminal and receive an Image.gz-dtb file in arch/arm64/boot/
+# Once those are done, you should be able to execute './build.sh' from terminal and receive a working zip.
 
 ############################################################
 # Build Script Variables
