@@ -14,6 +14,10 @@
 *.o.*
 *.a
 *.s
+*.dtb
+*.dtb.S
+*.gz-dtb
+*.ll
 *.ko
 *.so
 *.so.dbg
@@ -30,11 +34,14 @@
 *.xz
 *.lz4
 *.lzo
+*.order
 *.patch
 *.gcno
 modules.builtin
 Module.symvers
 *.dwo
+*.su
+*.tar
 
 #
 # Top-level generic files
@@ -43,9 +50,16 @@ Module.symvers
 /TAGS
 /linux
 /vmlinux
+/vmlinux.32
+/vmlinux-gdb.py
 /vmlinuz
 /System.map
 /Module.markers
+
+#
+# RPM spec file (make rpm-pkg)
+#
+/*.spec
 
 #
 # Debian directory (make deb-pkg)
@@ -53,10 +67,16 @@ Module.symvers
 /debian/
 
 #
-# git files that we don't want to ignore even it they are dot-files
+# tar directory (make tar*-pkg)
+#
+/tar-install/
+
+#
+# git files that we don't want to ignore even if they are dot-files
 #
 !.gitignore
 !.mailmap
+!.cocciconfig
 
 #
 # Generated include files
@@ -67,6 +87,7 @@ arch/*/include/generated
 
 # stgit generated dirs
 patches-*
+out
 
 # quilt's files
 patches
@@ -82,6 +103,9 @@ GRTAGS
 GSYMS
 GTAGS
 
+# id-utils files
+ID
+
 *.orig
 *~
 \#*#
@@ -90,6 +114,7 @@ GTAGS
 # Leavings from module signing
 #
 extra_certificates
+signing_key.pem
 signing_key.priv
 signing_key.x509
 x509.genkey
@@ -97,5 +122,15 @@ x509.genkey
 # Kconfig presets
 all.config
 
+# Kdevelop4
+*.kdev4
+
 # fetched Android config fragments
-android/configs/android-*.cfg
+kernel/configs/android-*.cfg
+build/Changelog\.txt
+upload/
+
+build/kernel\.gz-dtb
+
+*.gz-dtb
+
