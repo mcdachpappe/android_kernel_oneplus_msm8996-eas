@@ -308,27 +308,44 @@ EXTRA_OPTS := \
 	-fsched-pressure -fsched-spec-load -ftree-vectorize \
 	-fno-guess-branch-probability -fpredictive-commoning \
 	-fvect-cost-model=cheap -fsimd-cost-model=cheap \
-	-ftree-partial-pre -fno-gcse
+	-ftree-partial-pre -fno-gcse -fno-schedule-insns
 
 # Arm64 Architecture Specific GCC Flags
 # fall back to -march=armv8-a in case the compiler isn't compatible
 # with -mcpu and -mtune
 ARM_ARCH_OPT := \
 	$(call cc-option,-march=armv8-a+crc+crypto+fp+simd,) \
-	-mtune=cortex-a57 -mcpu=cortex-a57+crc+crypto+fp+simd \
+	-mtune=cortex-a57.cortex-a53 -mcpu=cortex-a57.cortex-a53+crc+crypto+fp+simd \
 	--param l1-cache-line-size=64 --param l1-cache-size=32 --param l2-cache-size=512 
+
+# Arm64 Architecture Specific Clang Flags
+CLANG_ARCH_OPT := \
+	-march=armv8-a -mcpu=kryo -mfloat-abi=hard -mfpu=crypto-neon-fp-armv8
 
 # Optional Flags
 GEN_OPT_FLAGS := \
  -DNDEBUG -g0 -pipe \
  -fomit-frame-pointer 
 
+LLVM_FLAGS := \
+ -mllvm -polly -mllvm -polly-optimized-scops -mllvm -polly-process-unprofitable \
+ -mllvm -polly-vectorizer=stripmine -mllvm -polly-tiling=false
+
+#Targetting Options
+LTO_TRIPLE = $(HDK_TC)lto-	
+LLVM_TRIPLE = $(HDK_TC)llvm-
+CLANG_TRIPLE = $(HDK_TC)clang $(CLANG_ARCH_OPT) $(LLVM_FLAGS) -flto --sysroot=$(HDK) --gcc-toolchain=$(CROSS_COMPILE)gcc
+CPP_TRIPLE = $(HDK_TC)clang++ $(CLANG_ARCH_OPT) $(LLVM_FLAGS) -Ofast -flto --sysroot=$(HDK) --gcc-toolchain=$(CROSS_COMPILE)gcc
+
+#Clang specific compatibility
+CLANG_IA_FLAG += -no-integrated-as
+
 #########
 
 HOSTCC       = gcc
 HOSTCXX      = g++
-HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89
-HOSTCXXFLAGS = -O2
+HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89 $(GEN_OPT_FLAGS) $(EXTRA_OPTS)
+HOSTCXXFLAGS = -O2 $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS) -fdeclone-ctor-dtor
 
 ifeq ($(shell $(HOSTCC) -v 2>&1 | grep -c "clang version"), 1)
 HOSTCFLAGS  += -Wno-unused-value -Wno-unused-parameter \
@@ -383,14 +400,14 @@ include $(srctree)/scripts/Kbuild.include
 
 # Make variables (CC, etc...)
 AS		= $(CROSS_COMPILE)as
-LD		= $(CROSS_COMPILE)ld --strip-debug
+LD		= $(HDK_TC)ld.lld -m aarch64linux --strip-debug --lto-O3 
 CC		= $(CROSS_COMPILE)gcc -g0
-CPP		= $(CC) -E
-AR		= $(CROSS_COMPILE)ar
+CPP		= $(CPP_TRIPLE) -E -flto
+AR		= $(LLVM_TRIPLE)ar
 NM		= $(CROSS_COMPILE)nm
 STRIP		= $(CROSS_COMPILE)strip
-OBJCOPY		= $(CROSS_COMPILE)objcopy -g --strip-debug
-OBJDUMP		= $(CROSS_COMPILE)objdump
+OBJCOPY		= $(CROSS_COMPILE)objcopy -g --strip-debug --strip-unneeded
+OBJDUMP		= $(LLVM_TRIPLE)objdump -arch=armv8-a -mcpu=kryo
 AWK		= awk
 GENKSYMS	= scripts/genksyms/genksyms
 INSTALLKERNEL  := installkernel
@@ -436,8 +453,8 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -std=gnu89 \
 		   $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS)
 
-KBUILD_AFLAGS_KERNEL := $(CFLAGS_KERNEL) $(GEN_OPT_FLAGS) -flto -fuse-linker-plugin -r
-KBUILD_CFLAGS_KERNEL := $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS)
+KBUILD_AFLAGS_KERNEL := $(CFLAGS_KERNEL)
+KBUILD_CFLAGS_KERNEL := $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT)
 KBUILD_AFLAGS   := -D__ASSEMBLY__
 KBUILD_AFLAGS_MODULE  := -DMODULE $(GEN_OPT_FLAGS)
 KBUILD_CFLAGS_MODULE  := -DMODULE $(GEN_OPT_FLAGS)
@@ -659,7 +676,7 @@ KBUILD_AFLAGS	+= $(call cc-option,-fno-PIE)
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os $(call cc-disable-warning,maybe-uninitialized,)
 else
-KBUILD_CFLAGS	+= -O2 $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS)
+KBUILD_CFLAGS	+= -O2 $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT)
 endif
 
 # Tell gcc to never replace conditional load with a non-conditional one
@@ -730,6 +747,13 @@ KBUILD_CPPFLAGS += $(call cc-option,-Wno-unknown-warning-option,)
 KBUILD_CFLAGS += $(call cc-disable-warning, unused-variable)
 KBUILD_CFLAGS += $(call cc-disable-warning, format-invalid-specifier)
 KBUILD_CFLAGS += $(call cc-disable-warning, gnu)
+KBUILD_CFLAGS += $(call cc-disable-warning, pointer-bool-conversion)
+KBUILD_CFLAGS += $(call cc-disable-warning, address-of-packed-member)
+KBUILD_CFLAGS += $(call cc-disable-warning, duplicate-decl-specifier)
+KBUILD_CFLAGS += -Wno-asm-operand-widths
+KBUILD_CFLAGS += -Wno-initializer-overrides
+KBUILD_CFLAGS += -fno-builtin
+
 # Quiet clang warning: comparison of unsigned expression < 0 is always false
 KBUILD_CFLAGS += $(call cc-disable-warning, tautological-compare)
 # CLANG uses a _MergedGlobals as optimization, but this breaks modpost, as the
@@ -737,10 +761,13 @@ KBUILD_CFLAGS += $(call cc-disable-warning, tautological-compare)
 # See modpost pattern 2
 KBUILD_CFLAGS += $(call cc-option, -mno-global-merge,)
 KBUILD_CFLAGS += $(call cc-option, -fcatch-undefined-behavior)
+KBUILD_CFLAGS += $(call cc-option, -no-integrated-as)
+KBUILD_AFLAGS += $(call cc-option, -no-integrated-as)
 else
 
-# These warnings generated too much noise in a regular build.
-# Use make W=1 to enable them (see scripts/Makefile.build)
+KBUILD_CFLAGS += $(call cc-option,-fno-delete-null-pointer-checks,)
+# This warning generated too much noise in a regular build.
+# Use make W=1 to enable this warning (see scripts/Makefile.build)
 KBUILD_CFLAGS += $(call cc-disable-warning, unused-but-set-variable)
 KBUILD_CFLAGS += $(call cc-disable-warning, unused-const-variable)
 endif
@@ -805,6 +832,9 @@ KBUILD_CFLAGS += $(call cc-option,-Wdeclaration-after-statement,)
 
 # disable pointer signed / unsigned warnings in gcc 4.0
 KBUILD_CFLAGS += $(call cc-disable-warning, pointer-sign)
+
+# disable stringop warnings in gcc 8+
+KBUILD_CFLAGS += $(call cc-disable-warning, stringop-truncation)
 
 # disable invalid "can't wrap" optimizations for signed / pointers
 KBUILD_CFLAGS	+= $(call cc-option,-fno-strict-overflow)
@@ -1492,9 +1522,13 @@ clean: $(clean-dirs)
 		\( -name '*.[oas]' -o -name '*.ko' -o -name '.*.cmd' \
 		-o -name '*.ko.*' \
 		-o -name '*.dwo'  \
+		-o -name '*.su'  \
 		-o -name '.*.d' -o -name '.*.tmp' -o -name '*.mod.c' \
 		-o -name '*.symtypes' -o -name 'modules.order' \
 		-o -name modules.builtin -o -name '.tmp_*.o.*' \
+		-o -name '*.c.[012]*.*' \
+		-o -name '*.ll' \
+		-o -name '*.*.symversions' \) -type f -print | xargs rm -f
 		-o -name '*.gcno' \) -type f -print | xargs rm -f
 
 # Generate tags for editors
