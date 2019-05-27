@@ -299,6 +299,32 @@ CONFIG_SHELL := $(shell if [ -x "$$BASH" ]; then echo $$BASH; \
 	  else if [ -x /bin/bash ]; then echo /bin/bash; \
 	  else echo sh; fi ; fi)
 
+# HolyDragon Optimization Flags #
+
+# Specific GCC Optimizations	  
+EXTRA_OPTS := \
+	-falign-loops=1 -falign-functions=1 -falign-labels=1 -falign-jumps=1 \
+	-fira-hoist-pressure -fira-loop-pressure -fno-inline-small-functions \
+	-fsched-pressure -fsched-spec-load -ftree-vectorize \
+	-fno-guess-branch-probability -fpredictive-commoning \
+	-fvect-cost-model=cheap -fsimd-cost-model=cheap \
+	-ftree-partial-pre -fno-gcse
+
+# Arm64 Architecture Specific GCC Flags
+# fall back to -march=armv8-a in case the compiler isn't compatible
+# with -mcpu and -mtune
+ARM_ARCH_OPT := \
+	$(call cc-option,-march=armv8-a+crc+crypto+fp+simd,) \
+	-mtune=cortex-a57 -mcpu=cortex-a57+crc+crypto+fp+simd \
+	--param l1-cache-line-size=64 --param l1-cache-size=32 --param l2-cache-size=512 
+
+# Optional Flags
+GEN_OPT_FLAGS := \
+ -DNDEBUG -g0 -pipe \
+ -fomit-frame-pointer 
+
+#########
+
 HOSTCC       = gcc
 HOSTCXX      = g++
 HOSTCFLAGS   = -Wall -Wmissing-prototypes -Wstrict-prototypes -O2 -fomit-frame-pointer -std=gnu89
@@ -378,8 +404,8 @@ CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
 CFLAGS_MODULE   =
 AFLAGS_MODULE   =
 LDFLAGS_MODULE  = --strip-debug
-CFLAGS_KERNEL	=
-AFLAGS_KERNEL	=
+CFLAGS_KERNEL	= $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS)
+AFLAGS_KERNEL	= $(CFLAGS_KERNEL) -flto -fuse-linker-plugin -r
 CFLAGS_GCOV	= -fprofile-arcs -ftest-coverage -fno-tree-loop-im
 CFLAGS_KCOV	= -fsanitize-coverage=trace-pc
 
@@ -406,14 +432,15 @@ KBUILD_CPPFLAGS := -D__KERNEL__
 KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
-		   -Wno-format-security \
-		   -std=gnu89
+		   -Wno-format-security -Wno-bool-compare \
+		   -std=gnu89 \
+		   $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS)
 
-KBUILD_AFLAGS_KERNEL :=
-KBUILD_CFLAGS_KERNEL :=
+KBUILD_AFLAGS_KERNEL := $(CFLAGS_KERNEL) $(GEN_OPT_FLAGS) -flto -fuse-linker-plugin -r
+KBUILD_CFLAGS_KERNEL := $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS)
 KBUILD_AFLAGS   := -D__ASSEMBLY__
-KBUILD_AFLAGS_MODULE  := -DMODULE
-KBUILD_CFLAGS_MODULE  := -DMODULE
+KBUILD_AFLAGS_MODULE  := -DMODULE $(GEN_OPT_FLAGS)
+KBUILD_CFLAGS_MODULE  := -DMODULE $(GEN_OPT_FLAGS)
 KBUILD_LDFLAGS_MODULE := -T $(srctree)/scripts/module-common.lds
 
 
@@ -425,7 +452,9 @@ export VERSION PATCHLEVEL SUBLEVEL KERNELRELEASE KERNELVERSION
 export ARCH SRCARCH CONFIG_SHELL HOSTCC HOSTCFLAGS CROSS_COMPILE AS LD CC
 export CPP AR NM STRIP OBJCOPY OBJDUMP
 export MAKE AWK GENKSYMS INSTALLKERNEL PERL PYTHON UTS_MACHINE
-export HOSTCXX HOSTCXXFLAGS LDFLAGS_MODULE CHECK CHECKFLAGS
+export HOSTCXX HOSTCXXFLAGS LDFLAGS_MODULE CHECK CHECKFLAGS 
+export GEN_OPT_FLAGS ARM_ARCH_OPT EXTRA_OPTS
+export CLANG_FLAGS OPT_FLAGS LLVM_FLAGS HDK_TC
 
 export KBUILD_CPPFLAGS NOSTDINC_FLAGS LINUXINCLUDE OBJCOPYFLAGS LDFLAGS
 export KBUILD_CFLAGS CFLAGS_KERNEL CFLAGS_MODULE CFLAGS_GCOV CFLAGS_KCOV CFLAGS_KASAN CFLAGS_UBSAN
@@ -620,6 +649,9 @@ KBUILD_CFLAGS	+= $(call cc-disable-warning,frame-address,)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, format-truncation)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, format-overflow)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, int-in-bool-context)
+KBUILD_CFLAGS	+= $(call cc-disable-warning, logical-not-parentheses)
+KBUILD_CFLAGS	+= $(call cc-disable-warning, misleading-indentation)
+KBUILD_CFLAGS	+= $(call cc-disable-warning, maybe-uninitialized)
 KBUILD_CFLAGS	+= $(call cc-disable-warning, attribute-alias)
 KBUILD_CFLAGS	+= $(call cc-option,-fno-PIE)
 KBUILD_AFLAGS	+= $(call cc-option,-fno-PIE)
@@ -627,7 +659,7 @@ KBUILD_AFLAGS	+= $(call cc-option,-fno-PIE)
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= -Os $(call cc-disable-warning,maybe-uninitialized,)
 else
-KBUILD_CFLAGS	+= -O2
+KBUILD_CFLAGS	+= -O2 $(GEN_OPT_FLAGS) $(ARM_ARCH_OPT) $(EXTRA_OPTS)
 endif
 
 # Tell gcc to never replace conditional load with a non-conditional one
