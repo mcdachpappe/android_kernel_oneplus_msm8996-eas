@@ -30,10 +30,10 @@ restore='\033[0m'
 ############################################################ 
 
 # Source defconfig used to build
-	dc=HDO_defconfig
+	dc=HD_defconfig
 
 # Compile Path to out 
-	o="O=/home/holyangel/android/Kernels/OP3/out"
+	o="O=/home/holyangel/android/Kernels/op3p/out"
 
 # CPU threads
 	th="-j4"
