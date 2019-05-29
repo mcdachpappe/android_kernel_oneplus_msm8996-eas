@@ -2978,7 +2978,7 @@ static int ethtool_ioctl(struct net *net, struct compat_ifreq __user *ifr32)
 				return -EFAULT;
 		} else if (copy_in_user(&rxnfc->rule_cnt,
 					&compat_rxnfc->rule_cnt,
-				 sizeof(rxnfc->rule_cnt)))
+					sizeof(rxnfc->rule_cnt)))
 			return -EFAULT;
 	}
 

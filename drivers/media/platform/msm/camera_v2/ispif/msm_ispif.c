@@ -1,4 +1,4 @@
-/* Copyright (c) 2013-2016, The Linux Foundation. All rights reserved.
+/* Copyright (c) 2013-2017, 2019 The Linux Foundation. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -205,8 +205,10 @@ static long msm_ispif_cmd_ext(struct v4l2_subdev *sd,
 	long rc = 0;
 	struct ispif_device *ispif =
 		(struct ispif_device *)v4l2_get_subdevdata(sd);
-	struct ispif_cfg_data_ext pcdata;
+	struct ispif_cfg_data_ext pcdata = {0};
 	struct msm_ispif_param_data_ext *params = NULL;
+
+	if (is_compat_task()) {
 #ifdef CONFIG_COMPAT
 	struct ispif_cfg_data_ext_32 *pcdata32 =
 		(struct ispif_cfg_data_ext_32 *)arg;
@@ -218,8 +220,8 @@ static long msm_ispif_cmd_ext(struct v4l2_subdev *sd,
 	pcdata.cfg_type  = pcdata32->cfg_type;
 	pcdata.size = pcdata32->size;
 	pcdata.data = compat_ptr(pcdata32->data);
-
-#else
+#endif
+	} else {
 	struct ispif_cfg_data_ext *pcdata64 =
 		(struct ispif_cfg_data_ext *)arg;
 
@@ -230,7 +232,7 @@ static long msm_ispif_cmd_ext(struct v4l2_subdev *sd,
 	pcdata.cfg_type  = pcdata64->cfg_type;
 	pcdata.size = pcdata64->size;
 	pcdata.data = pcdata64->data;
-#endif
+	}
 	if (pcdata.size != sizeof(struct msm_ispif_param_data_ext)) {
 		pr_err("%s: payload size mismatch\n", __func__);
 		return -EINVAL;

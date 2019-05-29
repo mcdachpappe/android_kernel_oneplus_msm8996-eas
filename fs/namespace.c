@@ -1686,9 +1686,9 @@ struct mount *copy_tree(struct mount *mnt, struct dentry *dentry,
 					q = ERR_PTR(-EPERM);
 					goto out;
 				} else {
-				s = skip_mnt_tree(s);
-				continue;
-			}
+					s = skip_mnt_tree(s);
+					continue;
+				}
 			}
 			if (!(flag & CL_COPY_MNT_NS_FILE) &&
 			    is_mnt_ns_file(s->mnt.mnt_root)) {
