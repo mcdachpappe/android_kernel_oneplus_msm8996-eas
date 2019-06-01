@@ -263,15 +263,12 @@ out:
  *
  * Returns zero on success; non-zero on error condition
  */
-
-
 static int
 ecryptfs_create(struct inode *directory_inode, struct dentry *ecryptfs_dentry,
 		umode_t mode, bool excl)
 {
 	struct inode *ecryptfs_inode;
 	int rc;
-	struct ecryptfs_crypt_stat *crypt_stat;
 
 	ecryptfs_inode = ecryptfs_do_create(directory_inode, ecryptfs_dentry,
 					    mode);
@@ -281,7 +278,6 @@ ecryptfs_create(struct inode *directory_inode, struct dentry *ecryptfs_dentry,
 		rc = PTR_ERR(ecryptfs_inode);
 		goto out;
 	}
-
 	/* At this point, a file exists on "disk"; we need to make sure
 	 * that this on disk file is prepared to be an ecryptfs file */
 	rc = ecryptfs_initialize_file(ecryptfs_dentry, ecryptfs_inode);
@@ -293,14 +289,8 @@ ecryptfs_create(struct inode *directory_inode, struct dentry *ecryptfs_dentry,
 		iput(ecryptfs_inode);
 		goto out;
 	}
-
-	crypt_stat = &ecryptfs_inode_to_private(ecryptfs_inode)->crypt_stat;
-	if (get_events() && get_events()->open_cb)
-			get_events()->open_cb(
-				ecryptfs_inode_to_lower(ecryptfs_inode),
-					crypt_stat);
-
-	d_instantiate_new(ecryptfs_dentry, ecryptfs_inode);
+	unlock_new_inode(ecryptfs_inode);
+	d_instantiate(ecryptfs_dentry, ecryptfs_inode);
 out:
 	return rc;
 }
